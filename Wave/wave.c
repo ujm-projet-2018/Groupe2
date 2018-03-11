@@ -1,0 +1,344 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <MLV/MLV_all.h>
+#include <unistd.h>
+
+//#include "GL/gl.h"
+//#include "GL/glut.h"
+
+#define ZOOM_X 1000.0
+#define VITESSE_DX 10
+#define VITESSE_ZOOM 1.05
+
+
+
+//void clavier(unsigned char c, int i, int j);
+void recupere_mot(char mot[5], FILE* fich);
+void tracerCourbe(int dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim);
+void tracerSegment(int dx, int dec_x, double zoom, double x1, double y1, double x2, double y2, int l, int h);
+void tracerPoint(int dx, int dec_x, double zoom, double x1, double y1, int l, int h);
+
+
+
+void usage(char* s){   /* explique le fonctionnement du programme */
+  fprintf(stderr,"Usage: %s [options] -f <fichier wav>\n",s);
+  fprintf(stderr,"      -f <fichier> : permet de preciser le fichier a utiliser (obligatoire)\n");
+
+  fprintf(stderr,"Options:\n");
+
+  fprintf(stderr,"   Choisir les parametres suivants:\n");
+  fprintf(stderr,"      -u : affiche l'usage du programme et quitte\n");
+  fprintf(stderr,"      -m : pour jouer le fichier wave lors de son premier trace a l'ecran\n");
+  fprintf(stderr,"      -a : pour activer l'animation du tracer de la courbe\n");
+    
+  fprintf(stderr,"   Definir la taille des parametres suivant:\n");
+  fprintf(stderr,"      -e \"entier\" > 1 : pour choisir un echantillonage appliquer lors de la recuperation des donnees (divise le nombre de donnees recuperees)\n");
+  fprintf(stderr,"      -p \"entier\" > 1 : pour definir la precision du tracer du signal: ne touche pas aux donnees et fluidifie le tracer\n");
+  fprintf(stderr,"      -l \"entier\" > 800 : pour choisir la largeur de la fenetre (1200 par defaut)\n");
+  fprintf(stderr,"      -h \"entier\" > 600 : pour choisir la largeur de la fenetre (750 par defaut)\n");
+}
+
+
+int main(int argc, char** argv){
+    int compteur = 0, dx = 0, arret = 0, nb_point = 0, dec_x, dec_y;   
+    int freqEch, echantillon, defausse_entier, bytePerSec, taille, longueur;   // donnees du fichier WAVE
+    int filtre = 1, precision = 1, l = 1200, h = 750, op_son = 0, anim = 0;   // les options
+    int op;    /* sert a determiner les options selectionner */
+
+    short* amplitudes;
+    float* temps;
+    double zoom = 1.0;
+    
+    short amp, defausse_short, nbCanaux, bitsPerSample, bytePerBloc;
+    char* nomFich = NULL;
+    char mot[5];   // permet de recuperer les mot de longueur 4 qui servent a identifier chaque bloc
+    mot[4] = '\0';   //rajoute la fin du mot directement
+    FILE* fich;
+    MLV_Sound* son = NULL;
+
+    // verifie que le nombre d'argument minimal requis soit respecte    
+    if (argc < 2){
+         usage(argv[0]);
+         exit(-1);
+    }
+
+    /********** traitement des options entrees sur la ligne de commande ********/
+    while ((op = getopt(argc, argv, "e:f:l:h:p:mau")) != -1){   /* cherche les options sur la ligne de commande */
+      switch (op){    /* determine l'option recuperer */
+      case 'm':
+        op_son = 1;
+        break;
+      case 'a':
+        anim = 1;
+        break;
+      case 'u':   /* affiche l'usage du programme */
+        usage(argv[0]);
+        exit(0);
+      case 'e':    /* permet de preciser la valeur de l'echantillonage */
+        filtre = atoi(optarg);  /* recupere la valeur situer juste apres l'option */
+        break;
+      case 'f':     /* precise le fichier a utiliser */
+        nomFich = optarg;
+        break;
+      case 'p':     /* precise la precision du trace */
+        precision = atoi(optarg);
+        break;
+      case 'l':  /* precise la largeur de la fenetre */
+        l = atoi(optarg);
+        break;
+      case 'h':  /* precise la hauteur de la fenetre */
+        h = atoi(optarg);
+        break;
+      default:   /* si jamais ne correspond a aucune option on appel usage et on quitte */
+        usage(argv[0]);
+        exit(-1);
+      }
+    }
+    
+    // verifie si le fichier a bien ete donne et la fenetre une taille valide
+    if (nomFich == NULL || l < 800 || h < 600){
+        usage(argv[0]);
+        exit(-1);
+    }
+    
+    // initialisation des variables de dacalage 
+    dec_x = l/2; dec_y = h/2;
+    
+    // initialisation du lecteur et chargeur audio
+    MLV_init_audio();
+    son = MLV_load_sound(nomFich);  // chargement du son
+    if (son == NULL)
+        fprintf(stderr, "Le fichier audio n'a pu etre ouvert par MLV il ne sera donc pas lu.\n");
+    
+    fich = fopen(nomFich, "rb");
+    if (fich == NULL){
+         fprintf(stderr, "Probleme lors de l'ouverture du fichier\n");
+         exit(-1);
+    }
+    
+    /*
+    // initialisation de glut
+    glutInit(&argc, argv);
+    // initialisation du mode d'affichage
+    glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
+    // position et taille de la fenetre
+    glutInitWindowSize(1200, 750);   // remplacer par glutFullScreen pour du pleine ecran
+    glutInitWindowPosition(50, 50);
+    // creation  de la fenetre
+    glutCreateWindow("Spetre d'un fichier WAV");
+    // activation d'une fonction gerant le clavier
+    glutKeyboardFunc(clavier); 
+    // initialisation de la redirection des evenements vers les fonctions associees
+    //glutMainLoop();
+    */
+    // creation de la fenetre MLV
+    MLV_create_window("Spetre d'un fichier WAV","Spectre",l,h);
+    
+    // lecture de l'entete au moins 44 bytes a traiter
+    recupere_mot(mot, fich);   // recupere le mot DataBlocID
+    while(mot[0] != 'd' || mot[1] != 'a' || mot[2] != 't' || mot[3] != 'a'){   // on recommence tant que la constante 'data' n'a pas ete trouver
+        if (mot[0] == 'R' && mot[1] == 'I' && mot[2] == 'F' && mot[3] == 'F'){   // on traite les blocs importants: RIFF, cue, fmt
+            fread(&taille, sizeof(int), 1, fich);  //FileSize
+            fread(&defausse_entier, sizeof(int), 1, fich);  //FileFormatID
+        }else if (mot[0] == 'c' && mot[1] == 'u' && mot[2] == 'e'){
+            fread(&longueur, sizeof(int), 1, fich);  // CUE CHUNK longueur du bloc
+            fprintf(stderr, "[DEBUG] longueur = %d\n", longueur);
+            fseek(fich, (long) longueur, SEEK_CUR);    // se deplace de la longuer du bloc
+        }else if (mot[0] == 'f' && mot[1] == 'm' && mot[2] == 't'){
+            fread(&longueur, sizeof(int), 1, fich);  //BlocSize
+            fread(&defausse_short, sizeof(short), 1, fich);  //AudioFormat
+            fread(&nbCanaux, sizeof(short), 1, fich);  //NbrCanaux
+            fread(&freqEch, sizeof(int), 1, fich);  //Frequence
+            fread(&bytePerSec, sizeof(int), 1, fich);  //BytePerSec
+            fread(&bytePerBloc, sizeof(short), 1, fich);  //BytePerBloc
+            fread(&bitsPerSample, sizeof(short), 1, fich);  //BitsPerSample
+            fseek(fich, (long) (longueur-16), SEEK_CUR);    // se deplace de la longueur du bloc-16(les donnees lus)
+        }else if (mot[0] == 'L' && mot[1] == 'I' && mot[2] == 'S' && mot[3] == 'T'){
+            fread(&longueur, sizeof(int), 1, fich);  // LIST CHUNK longueur du bloc
+            fprintf(stderr, "[DEBUG] longueur = %d\n", longueur);
+            fseek(fich, (long) longueur, SEEK_CUR);    // se deplace de la longueur du bloc
+        }else{
+            fread(&longueur, sizeof(int), 1, fich);  // recupere la longueur du bloc inconnu
+            fprintf(stderr, "[DEBUG] longueur = %d\n", longueur);
+            fseek(fich, (long) longueur, SEEK_CUR);    // se deplace de la longueur du bloc
+        }
+        recupere_mot(mot, fich);   // recupere le mot DataBlocID
+        sleep(1);
+    }
+    fread(&echantillon, sizeof(int), 1, fich);  //DataSize util pour arreter la boucle principale
+    
+    // augmente la valeur du filtre pour ne garder les points que d'un seul canal
+    filtre *= nbCanaux;
+    // calcule du nombre de point a recupere dans les tableaux
+    nb_point = (echantillon/((bitsPerSample/8)*filtre));
+    
+    // afichage des donnees du fichier WAVE
+    fprintf(stderr, "\nSpecification du fichier:\n");
+    fprintf(stderr, "Nombre d'octet lu par seconde: %d\n", bytePerSec);
+    fprintf(stderr, "Nombre d'octet par bloc: %d\n", bytePerBloc);
+    fprintf(stderr, "Nombre de bits par sample: %u\n", bitsPerSample);
+    fprintf(stderr, "Nombre de canaux: %u\n", nbCanaux);
+    fprintf(stderr, "Frequence d'echantillonage: %d\n", freqEch);
+    fprintf(stderr, "Taille du tableau de donnee: %d\n", nb_point);
+    fprintf(stderr, "Echantillon: %d\n\n", echantillon);
+    
+    // initialisation des tableaux
+    amplitudes = (short*) calloc(sizeof(short), nb_point);
+    temps = (float*) calloc(sizeof(float), nb_point);
+    
+    // attent que les informations aient ete lu
+    sleep(3);
+    
+    // boucle principale lance une fois l'entete du fichier decrypte: analyse des donnees
+    while (compteur*(bitsPerSample/8) < echantillon){
+         // remets tous les bits du short 'amp' a 0
+         amp = 0;
+         // lecture des donnees du fichier WAVE
+         fread(&amp, sizeof(char)*(bitsPerSample/8), 1, fich);
+         
+         // affichage des infos sur console
+         fprintf(stderr, "Temps: %lf\n", (compteur/(bitsPerSample/8))*(1.0/freqEch));
+         fprintf(stderr, "Amplitude: %hd\n\n", amp);
+
+         // remplissage du tableau
+         amplitudes[compteur/filtre] = amp;
+         temps[compteur/filtre] = (compteur/(bitsPerSample/8))*(1.0/freqEch);
+         
+         // gestion des compteurs
+         compteur += filtre;
+         
+         // on avance de filtre-1 elements dans le fichier (accelere le traitement)
+         fseek(fich, (long) ((filtre-1)*(bitsPerSample/8)), SEEK_CUR);
+    }
+    
+    //MLV_Keyboard_button touche;
+    if (son != NULL && op_son)
+        MLV_play_sound(son, 1.0f);
+    tracerCourbe(dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, anim);
+    // visualisation du graphe
+    while (!arret){
+         // nettoyage de la fenetre
+         //glClear(GL_COLOR_BUFFER_BIT);
+        
+         // definition de l'espace de dessin
+         //glMatrixMode(GL_PROJECTION);
+         //glLoadIdentity();
+         //glOrtho(0, 1200, 0, 750, 0, 1);
+         
+         //MLV_wait_keyboard(&touche, NULL, NULL);
+         //fprintf(stderr, "touche = %d\n", touche);
+         // gestion des controles
+         if (MLV_get_keyboard_state(276) == MLV_PRESSED){   // fleche droite
+             dx += VITESSE_DX*(1.0/zoom);
+             // nettoyage de la fenetre
+             MLV_clear_window(MLV_rgba(0, 0, 0, 255));
+             // appel la fonction de tracer
+             tracerCourbe(dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0);
+         }else if (MLV_get_keyboard_state(275) == MLV_PRESSED){   // fleche gauche
+             dx -= VITESSE_DX*(1.0/zoom);
+             // nettoyage de la fenetre   
+             MLV_clear_window(MLV_rgba(0, 0, 0, 255));
+             // appel la fonction de tracer
+             tracerCourbe(dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0);
+         }else if (MLV_get_keyboard_state(274) == MLV_PRESSED){     // fleche bas
+             zoom /= VITESSE_ZOOM;
+             // nettoyage de la fenetre   
+             MLV_clear_window(MLV_rgba(0, 0, 0, 255));
+             // appel la fonction de tracer
+             tracerCourbe(dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0);
+         }else if (MLV_get_keyboard_state(273) == MLV_PRESSED){      // fleche haut
+             zoom *= VITESSE_ZOOM;
+             // nettoyage de la fenetre   
+             MLV_clear_window(MLV_rgba(0, 0, 0, 255));
+             // appel la fonction de tracer
+             tracerCourbe(dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0);
+         }else if (MLV_get_keyboard_state(27) == MLV_PRESSED){
+             arret = 1;
+         }
+
+         // attente en seconde
+         MLV_wait_milliseconds(30);
+         
+         // envoi des donnees
+         //glFlush();
+    }
+    
+    // libere l'espace allouee par la fenetre
+    MLV_free_window();
+    
+    exit(0);
+}
+
+void tracerCourbe(int dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim){
+    int i;
+    double oldTemps = 0, oldAmp = dec_y;
+    
+    // trace le repere mathematique au centre de l'ecran
+    MLV_draw_line(0, dec_y, 1200, dec_y, MLV_rgba(0, 0, 255, 255));
+    MLV_draw_line(l/2, 0, l/2, h, MLV_rgba(0, 0, 255, 255));
+    for (i = 0; i<nb_point-1; i+=filtre){
+        // affiche sur le terminal le point actuellement trace
+        fprintf(stderr, "[DEBUG] Point n %d\n", i);
+        
+        tracerSegment(dx, dec_x, zoom, oldTemps*ZOOM_X, (dec_y+oldAmp*dec_y/32767.0), temps[i+1]*ZOOM_X, (double) (dec_y+amplitude[i+1]*(dec_y/32767.0)), l, h);    // trace le segment entre le dernier point et le point actuel
+        
+        // recuperer le dernier point tracer
+        oldTemps = temps[i+1]; oldAmp = amplitude[i+1];
+            
+        // anim le tracer de la courbe
+        if (anim && (oldTemps*ZOOM_X)<l){
+            MLV_wait_milliseconds(1);
+            MLV_actualise_window();
+           //glFlush();
+        }
+    }
+    
+    // reactualise l'affichage
+    MLV_actualise_window();
+    // affiche pour le debugage le nombre de point traces a l'ecran
+    fprintf(stderr, "[DEBUG] Nombre de points traces %d\n", nb_point/filtre);
+}
+
+void tracerSegment(int dx, int dec_x, double zoom, double x1, double y1, double x2, double y2, int l, int h){
+    // transformation de la coordonnee x1 (zoom + decalage du zoom) 
+    x1 = (dx+x1-dec_x)*zoom;
+    x1 += dec_x;
+    // transformation de la coordonnee x2 (zoom + decalage du zoom)
+    x2 = (dx+x2-dec_x)*zoom;
+    x2 += dec_x;
+    
+    // tracer du segment grace a MLV
+    if (x1>=0 && x2>=0 && y1>=0 && y2>=0 && x1<=l && x2<=l && y1<=h && y2<=h)
+        MLV_draw_line(x1, y1, x2, y2, MLV_rgba(255,0,0,255));
+    
+    /*glBegin(GL_LINES);
+    //glColor3f(255*(1.0/255.0), 0, 0);
+    fprintf(stderr, "ICI\n");
+    glVertex2d(x1, y1); 
+    glVertex2d(x2, y2); 
+    glEnd();*/      
+}
+
+void tracerPoint(int dx, int dec_x, double zoom, double x1, double y1, int l, int h){
+    x1 = (dx+x1-dec_x)*zoom;
+    x1 += dec_x;
+    
+    // tracer du segment grace a MLV
+    if (x1>=0 && y1>=0 && x1<=l && y1<=h)
+        MLV_draw_point(x1, y1, MLV_rgba(255,0,0,255));
+}
+
+void recupere_mot(char mot[5], FILE* fich){    // recupere un mot de 4 octets (recupere l'ID d'un bloc)
+    fread(mot, sizeof(char), 1, fich);
+    fread(mot+1, sizeof(char), 1, fich);
+    fread(mot+2, sizeof(char), 1, fich);
+    fread(mot+3, sizeof(char), 1, fich);
+    fprintf(stderr, "[DEBUG] mot = %s\n", mot);   // affiche le mot trouvee pour debugage
+}
+
+/*void clavier(unsigned char c, int i, int j){   // fonction gerant les evenements clavier
+
+}*/
+
+
+
