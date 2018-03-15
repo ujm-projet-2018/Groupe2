@@ -13,11 +13,11 @@
 
 
 //void clavier(unsigned char c, int i, int j);
-void tracer_repere(int clicx, int clicy, int dx, int zoomx, int dec_x, int dec_y, int l, int h);
+void tracer_repere(int clicx, int clicy, double dx, int zoomx, int dec_x, int dec_y, int l, int h);
 void recupere_mot(char mot[5], FILE* fich, int debug);
-void tracerCourbe(int clicx, int clicy, int dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim, int verbeux, int debug);
-void tracerSegment(int dx, int dec_x, int dec_y, double zoom, double x1, double y1, double x2, double y2, int l, int h);
-void tracerPoint(int dx, int dec_x, double zoom, double x1, double y1, int l, int h);
+void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim, int verbeux, int debug);
+void tracerSegment(double dx, int dec_x, int dec_y, double zoom, double x1, double y1, double x2, double y2, int l, int h);
+void tracerPoint(double dx, int dec_x, double zoom, double x1, double y1, int l, int h);
 
 
 
@@ -43,14 +43,14 @@ void usage(char* s){   /* explique le fonctionnement du programme */
 
 
 int main(int argc, char** argv){
-    int compteur = 0, dx = 0, arret = 0, nb_point = 0, dec_x, dec_y, clicx = 0, clicy = 0;   
+    int compteur = 0, arret = 0, nb_point = 0, dec_x, dec_y, clicx = 0, clicy = 0;   
     int freqEch, echantillon, defausse_entier, bytePerSec, taille, longueur;   // donnees du fichier WAVE
     int filtre = 1, precision = 1, l = 1200, h = 750, op_son = 0, anim = 0, debug = 0, verbeux = 0;   // les options
     int op;    /* sert a determiner les options selectionner */
 
     short* amplitudes;
     float* temps;
-    double zoom = 1.0;
+    double zoom = 1.0, dx = 0.0;
     
     short amp, defausse_short, nbCanaux, bitsPerSample, bytePerBloc;
     char* nomFich = NULL;
@@ -293,7 +293,7 @@ int main(int argc, char** argv){
     exit(0);
 }
 
-void tracerCourbe(int clicx, int clicy, int dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim, int verbeux, int debug){
+void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim, int verbeux, int debug){
     int i;
     double oldTemps = 0, oldAmp = dec_y;
     
@@ -325,7 +325,7 @@ void tracerCourbe(int clicx, int clicy, int dx, int dec_x, int dec_y, double zoo
         fprintf(stderr, "Nombre de points traces %d\n", nb_point/filtre);
 }
 
-void tracerSegment(int dx, int dec_x, int dec_y, double zoom, double x1, double y1, double x2, double y2, int l, int h){
+void tracerSegment(double dx, int dec_x, int dec_y, double zoom, double x1, double y1, double x2, double y2, int l, int h){
     // transformation de la coordonnee x1 (zoom + decalage du zoom) 
     x1 = (dx+x1-dec_x)*zoom;
     x1 += dec_x;
@@ -345,7 +345,7 @@ void tracerSegment(int dx, int dec_x, int dec_y, double zoom, double x1, double 
     glEnd();*/      
 }
 
-void tracerPoint(int dx, int dec_x, double zoom, double x1, double y1, int l, int h){
+void tracerPoint(double dx, int dec_x, double zoom, double x1, double y1, int l, int h){
     x1 = (dx+x1-dec_x)*zoom;
     x1 += dec_x;
     
@@ -354,7 +354,7 @@ void tracerPoint(int dx, int dec_x, double zoom, double x1, double y1, int l, in
         MLV_draw_point(x1, y1, MLV_rgba(255,0,0,255));
 }
 
-void tracer_repere(int clicx, int clicy, int dx, int zoomx, int dec_x, int dec_y, int l, int h){
+void tracer_repere(int clicx, int clicy, double dx, int zoomx, int dec_x, int dec_y, int l, int h){
     int i, pas = 75;
     double valeur;
     int tailleText = 0;
