@@ -13,7 +13,7 @@
 
 
 //void clavier(unsigned char c, int i, int j);
-void tracer_repere(int clicx, int clicy, double dx, int zoomx, int dec_x, int dec_y, int l, int h);
+void tracer_repere(int clicx, int clicy, double dx, double zoomx, int dec_x, int dec_y, int l, int h);
 void recupere_mot(char mot[5], FILE* fich, int debug);
 void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim, int verbeux, int debug);
 void tracerSegment(double dx, int dec_x, int dec_y, double zoom, double x1, double y1, double x2, double y2, int l, int h);
@@ -187,16 +187,14 @@ int main(int argc, char** argv){
     nb_point = (echantillon/((bitsPerSample/8)*filtre));
     
     // afichage des donnees du fichier WAVE
-    if (verbeux){
-        fprintf(stderr, "\nSpecification du fichier:\n");
-        fprintf(stderr, "Nombre d'octet lu par seconde: %d\n", bytePerSec);
-        fprintf(stderr, "Nombre d'octet par bloc: %d\n", bytePerBloc);
-        fprintf(stderr, "Nombre de bits par sample: %u\n", bitsPerSample);
-        fprintf(stderr, "Nombre de canaux: %u\n", nbCanaux);
-        fprintf(stderr, "Frequence d'echantillonage: %d\n", freqEch);
-        fprintf(stderr, "Taille du tableau de donnee: %d\n", nb_point);
-        fprintf(stderr, "Echantillon: %d\n\n", echantillon);
-    }
+    fprintf(stderr, "\nSpecification du fichier:\n");
+    fprintf(stderr, "Nombre d'octet lu par seconde: %d\n", bytePerSec);
+    fprintf(stderr, "Nombre d'octet par bloc: %d\n", bytePerBloc);
+    fprintf(stderr, "Nombre de bits par sample: %u\n", bitsPerSample);
+    fprintf(stderr, "Nombre de canaux: %u\n", nbCanaux);
+    fprintf(stderr, "Frequence d'echantillonage: %d\n", freqEch);
+    fprintf(stderr, "Taille du tableau de donnee: %d\n", nb_point);
+    fprintf(stderr, "Echantillon: %d\n\n", echantillon);
     
     // initialisation des tableaux
     amplitudes = (short*) calloc(sizeof(short), nb_point);
@@ -354,57 +352,68 @@ void tracerPoint(double dx, int dec_x, double zoom, double x1, double y1, int l,
         MLV_draw_point(x1, y1, MLV_rgba(255,0,0,255));
 }
 
-void tracer_repere(int clicx, int clicy, double dx, int zoomx, int dec_x, int dec_y, int l, int h){
-    int i, pas = 75;
+void tracer_repere(int clicx, int clicy, double dx, double zoomx, int dec_x, int dec_y, int l, int h){
+    int i, pas = 100, nb_grad = 10;
     double valeur;
     int tailleText = 0;
     char text[10];
+    char valeurs[25]="(0.000, 0.000)";
     
     text[9] = '\0';
     
-    dec_x = dec_x-dx;   // on zoom les valeures par rapport a leur representation et non a leur coordonnees    
+    dec_x = dec_x-dx;   // on zoom les valeures par rapport a leur representation et non a leur coordonnees reelles 
     
+    // trace de la croix permettant de connaitre une coordonnee precise
     if (clicx != 0 && clicy != 0){
-        // trace de la croix
         MLV_draw_line(0, clicy, l, clicy, MLV_rgba(0, 255, 0, 255));
         MLV_draw_line(clicx, 0, clicx, h, MLV_rgba(0, 255, 0, 255));
     }
     
+    // tracer la valeur en x et y pointee par la souris
+    if (clicx != 0 && clicy != 0){
+        valeur = (clicx-dx)-dec_x;   // je recentre ma valeur i-dx sur l'origine
+        valeur /= zoomx;    // je fais la mise a l'echelle inverse au zoom
+        valeur += dec_x;   // je recentre ma valeur
+        sprintf(valeurs,"(%.3lf, %.3lf)", valeur, (double) -(clicy-dec_y));
+    }
+    MLV_draw_text(l-150, 25, valeurs, MLV_rgba(0, 255, 0, 255));
+    
+    
     // trace le repere de l'axe des x
     MLV_draw_line(5, h-5, l, h-5, MLV_rgba(0, 0, 255, 255));
     // trace la graduation
-    for (i=pas; i<l; i+=(pas/5)){
+    for (i=pas/nb_grad; i<l; i+=(pas/nb_grad)){
         if (i % pas == 0){
             valeur = (i-dx)-dec_x;   // je recentre ma valeur i-dx sur l'origine
-            valeur /= (double) zoomx;    // je fais la mise a l'echelle
+            valeur /= zoomx;    // je fais la mise a l'echelle inverse au zoom
             valeur += dec_x;   // je recentre ma valeur
             sprintf(text,"%.3lf",valeur);
             MLV_get_size_of_text(text, &tailleText, NULL);
-            MLV_draw_line(5+i, h-5, 5+i, h-15, MLV_rgba(0, 0, 255, 255));
-            MLV_draw_text(5+(i-tailleText/2), h-30, text, MLV_rgba(0, 0, 255, 255));
+            MLV_draw_line(i, h-5, i, h-15, MLV_rgba(0, 0, 255, 255));
+            MLV_draw_text((i-tailleText/2), h-30, text, MLV_rgba(0, 0, 255, 255));
         }else{
-            MLV_draw_line(5+i, h-5, 5+i, h-10, MLV_rgba(0, 0, 255, 255));
+            MLV_draw_line(i, h-5, i, h-10, MLV_rgba(0, 0, 255, 255));
         }
     }
     
     // trace le repere de l'axe des y
     MLV_draw_line(5, h-5, 5, 0, MLV_rgba(0, 0, 255, 255));
     // trace la graduation
-    for (i=0; i<h/2; i+=(pas/5)){
+    for (i=0; i<h/2; i+=(pas/nb_grad)){
         if (i % pas == 0){
             // graduation negative
             sprintf(text,"%d",-i);
             MLV_get_size_of_text(text, NULL, &tailleText);
-            MLV_draw_line(5, dec_y+i-5, 15, dec_y+i-5, MLV_rgba(0, 0, 255, 255));
-            MLV_draw_text(20, dec_y+i-5-tailleText/2, text, MLV_rgba(0, 0, 255, 255));
+            MLV_draw_line(5, dec_y+i, 15, dec_y+i, MLV_rgba(0, 0, 255, 255));
+            MLV_draw_text(20, dec_y+i-tailleText/2, text, MLV_rgba(0, 0, 255, 255));
             // graduation positive
             sprintf(text,"%d",i);
             MLV_get_size_of_text(text, NULL, &tailleText);
-            MLV_draw_line(5, dec_y-i-5, 15, dec_y-i-5, MLV_rgba(0, 0, 255, 255));
-            MLV_draw_text(20, dec_y-i-5-tailleText/2, text, MLV_rgba(0, 0, 255, 255));
+            MLV_draw_line(5, dec_y-i, 15, dec_y-i, MLV_rgba(0, 0, 255, 255));
+            MLV_draw_text(20, dec_y-i-tailleText/2, text, MLV_rgba(0, 0, 255, 255));
         }else{
-            MLV_draw_line(5, dec_y+i-5, 10, dec_y+i-5, MLV_rgba(0, 0, 255, 255));
-            MLV_draw_line(5, dec_y-i-5, 10, dec_y-i-5, MLV_rgba(0, 0, 255, 255));
+            MLV_draw_line(5, dec_y+i, 10, dec_y+i, MLV_rgba(0, 0, 255, 255));
+            MLV_draw_line(5, dec_y-i, 10, dec_y-i, MLV_rgba(0, 0, 255, 255));
         }
     }
 }
