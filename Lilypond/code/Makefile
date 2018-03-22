@@ -1,12 +1,11 @@
 CC = gcc -Wall
-FLAGS = -lm -g
+FLAGS = -lm
 
+createSheet: createSheet.o
+	$(CC) src/main.c obj/createSheet.o -o bin/createSheet $(FLAGS)
 
-createSheet : ./obj/createSheet.o
-	$(CC) ./src/main.c ./obj/createSheet.o -o ./bin/createSheet $(FLAGS)
-
-createSheet.o: ./src/createSheet.c ./inc/createSheet.h
-	$(CC) ./src/createSheet.c -c
+createSheet.o: 
+	$(CC) -c src/createSheet.c -o obj/createSheet.o
 
 clean:
-	rm -f *./obj/.o *./obj/~ *./src/~ ./bin/createSheet 
+	rm -f obj/* src/~ bin/createSheet 

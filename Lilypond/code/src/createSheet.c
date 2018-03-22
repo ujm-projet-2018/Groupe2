@@ -4,7 +4,7 @@
 #include "../inc/createSheet.h"
 
 void init_ly(FILE* f){
-	fprintf(f,"\\version \"2.18.2\" { \n");
+	fprintf(f, "\\version \"2.18.2\" { \n");
 	fprintf(f, "\\language \"english\"\n"); 
 }
 
@@ -14,32 +14,33 @@ void lire_ecrire(FILE* input, FILE* output){
 	double temps_restant;
 
 	fscanf(input, "%d %d", &temps,&metrique);
-	//fprintf(output, "\\time %d\\%d\n", temps, metrique);
+	fprintf(output, "\\time %d\\%d\n", temps, metrique);
 	temps_restant=temps;
-	/*do{	fprintf(stderr,"**debuggage lire_ecrire\n");
-		fscanf(input, "%c %d", &notes,&temps);
-		temps_restant -= metrique/temps;
-		if(temps_restant <0){
-			if(temps_restant ==  2.0*temps){
-				fprintf(output, "%c%d( %c%d)\n",notes,temps*2, notes,temps*2);	
-			}
-			else {
-				decoupage_liaison(notes,metrique,temps,temps_restant,output);//devrait marcher pour 4/4 TODO revoir pour autre métriques
-
-			}
-			
-			//fprintf(output,"%c%d",notes,); Decouper puis liaison quand c'est inferieur recupere la note qu'on est en train de traiter prendre son temps la diviser par deux
-		}*/
-		//deduire_armure
-		/*remplir tableau des 12 notes possibles selon sorti pour déduire armure ??*/
-		//fputc(int caractere, output);
-		/*if(temps_restant ==0){
-			fprintf(output, "\n");	
-		}
-
-	}while(notes != EOF );*/
-
-
+	do{
+            fprintf(stderr,"**debuggage lire_ecrire\n");
+            fscanf(input, "%c %d", &notes,&temps);
+            temps_restant -= metrique/temps;
+            if(temps_restant <0){
+                if(temps_restant ==  2.0*temps){
+                    fprintf(output, "%c%d( %c%d)\n",notes,temps*2, notes,temps*2);	
+                }
+                else {
+                    decoupage_liaison(notes,metrique,temps,temps_restant,output);//devrait marcher pour 4/4 TODO revoir pour autre métriques
+                    
+                }
+		
+                //fprintf(output,"%c%d",notes,); Decouper puis liaison quand c'est inferieur recupere la note qu'on est en train de traiter prendre son temps la diviser par deux
+            }
+            //deduire_armure
+            //remplir tableau des 12 notes possibles selon sorti pour déduire armure ??*/
+            //fputc(int caractere, output);
+            if(temps_restant ==0){
+                fprintf(output, "\n");	
+            }
+            
+	}while(notes != EOF );
+        
+        
 }
 
 void decoupage_liaison(char notes, int metrique, int temps, int temps_restant,FILE* output){
