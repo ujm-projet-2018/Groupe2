@@ -15,8 +15,8 @@
 //void clavier(unsigned char c, int i, int j);
 void tracer_repere(int clicx, int clicy, double dx, double zoomx, int dec_x, int dec_y, int l, int h);
 void recupere_mot(char mot[5], FILE* fich, int debug);
-void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim, int verbeux, int debug);
-void tracerSegment(double dx, int dec_x, int dec_y, double zoom, double x1, double y1, double x2, double y2, int l, int h);
+void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim, int verbeux, int debug,int *tfre,int ntfre);
+void tracerSegment(double dx, int dec_x, int dec_y, double zoom, double x1, double y1, double x2, double y2, int l, int h,int bool);
 void tracerPoint(double dx, int dec_x, double zoom, double x1, double y1, int l, int h);
 
 
@@ -48,6 +48,9 @@ int main(int argc, char** argv){
     int filtre = 1, precision = 1, l = 1200, h = 750, op_son = 0, anim = 0, debug = 0, verbeux = 0;   // les options
     int op;    /* sert a determiner les options selectionner */
 
+    int ampmax = 0,*tfre,ntfre = 0;
+    double frequence = 0, frequencemax = -1000000,t1 = 0,t2 = 0,t1max,t2max;
+    
     short* amplitudes;
     float* temps;
     double zoom = 1.0, dx = 0.0;
@@ -199,23 +202,53 @@ int main(int argc, char** argv){
     // initialisation des tableaux
     amplitudes = (short*) calloc(sizeof(short), nb_point);
     temps = (float*) calloc(sizeof(float), nb_point);
-    
+    tfre = (int*) malloc(sizeof(int)*1);
     // attent que les informations aient ete lu
     sleep(3);
     
     // boucle principale lance une fois l'entete du fichier decrypte: analyse des donnees
+    
     while (compteur*(bitsPerSample/8) < echantillon){
          // remets tous les bits du short 'amp' a 0
          amp = 0;
          // lecture des donnees du fichier WAVE
          fread(&amp, sizeof(char)*(bitsPerSample/8), 1, fich);
          
-         // affichage des infos sur console
-         if (verbeux){
-            fprintf(stderr, "Temps: %lf\n", (compteur/(bitsPerSample/8))*(1.0/freqEch));
-            fprintf(stderr, "Amplitude: %hd\n\n", amp);
+         // Lucas fondamental***********************************************************
+	 t2 = (compteur/(bitsPerSample/8))*(1.0/freqEch);
+	 if (ampmax == 0){
+	   ampmax = amp;
+	 }
+	 if(amp > ampmax-(ampmax*0.05) && amp < ampmax*1.05 && t2 > t1+0.001){
+	   if(ampmax != 0){
+	     if(t2-t1!=0){
+	       frequence = 1/(t2-t1);
+	     }else frequence = 1/t2;
+	     if(frequence > frequencemax){
+	       t1max = t1;
+	       t2max = t2;
+	       frequencemax = frequence;
+	     }
+	   }
+	   ntfre ++;
+	   tfre = realloc(tfre,sizeof(int)*ntfre);
+	   tfre[ntfre-1] = compteur/filtre;
+	   ampmax = amp;
+	   t1 = t2;
+	     
+	 }
+	 else if (amp > ampmax ){
+	   t1 = t2;
+	   ampmax = amp;
+	 }
+	 //*****************************************************************************
+	 // affichage des infos sur console
+	 if (verbeux){
+	   
+	   fprintf(stderr, "Temps: %lf\n", t2);
+	   fprintf(stderr, "Amplitude: %hd\n\n", amp);
+	   
          }
-
          // remplissage du tableau
          amplitudes[compteur/filtre] = amp;
          temps[compteur/filtre] = (compteur/(bitsPerSample/8))*(1.0/freqEch);
@@ -230,7 +263,7 @@ int main(int argc, char** argv){
     //MLV_Keyboard_button touche;
     if (son != NULL && op_son)
         MLV_play_sound(son, 1.0f);
-    tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, anim, verbeux, debug);
+    tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, anim, verbeux, debug,tfre,ntfre);
     // visualisation du graphe
     while (!arret){
          // nettoyage de la fenetre
@@ -249,31 +282,31 @@ int main(int argc, char** argv){
              // nettoyage de la fenetre
              MLV_clear_window(MLV_rgba(0, 0, 0, 255));
              // appel la fonction de tracer
-             tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug);
+             tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,tfre,ntfre);
          }else if (MLV_get_keyboard_state(275) == MLV_PRESSED){   // fleche gauche
              dx -= VITESSE_DX*(1.0/zoom);
              // nettoyage de la fenetre   
              MLV_clear_window(MLV_rgba(0, 0, 0, 255));
              // appel la fonction de tracer
-             tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug);
+             tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,tfre,ntfre);
          }else if (MLV_get_keyboard_state(274) == MLV_PRESSED){     // fleche bas
              zoom /= VITESSE_ZOOM;
              // nettoyage de la fenetre   
              MLV_clear_window(MLV_rgba(0, 0, 0, 255));
              // appel la fonction de tracer
-             tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug);
+             tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,tfre,ntfre);
          }else if (MLV_get_keyboard_state(273) == MLV_PRESSED){      // fleche haut
              zoom *= VITESSE_ZOOM;
              // nettoyage de la fenetre   
              MLV_clear_window(MLV_rgba(0, 0, 0, 255));
              // appel la fonction de tracer
-             tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug);
+             tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,tfre,ntfre);
          }else if (MLV_get_mouse_button_state(MLV_BUTTON_LEFT) == MLV_PRESSED){
              MLV_get_mouse_position(&clicx, &clicy);
              // nettoyage de la fenetre   
              MLV_clear_window(MLV_rgba(0, 0, 0, 255));
              // appel la fonction de tracer
-             tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug);
+             tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,tfre,ntfre);
          }else if (MLV_get_keyboard_state(27) == MLV_PRESSED){
              arret = 1;
          }
@@ -291,16 +324,24 @@ int main(int argc, char** argv){
     exit(0);
 }
 
-void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim, int verbeux, int debug){
-    int i;
+void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim, int verbeux, int debug,int *tfre,int ntfre){
+  int i,j,bool;
     double oldTemps = 0, oldAmp = dec_y;
     
-    for (i = 0; i<nb_point-1; i+=filtre){
+    for (i = 0,j=0; i<nb_point-1; i+=filtre){
         // affiche sur le terminal le point actuellement trace
         if (debug)
             fprintf(stderr, "[DEBUG] Point n %d\n", i);
-        
-        tracerSegment(dx, dec_x, dec_y, zoom, oldTemps*ZOOM_X, (dec_y+oldAmp*dec_y/32767.0), temps[i+1]*ZOOM_X, (double) (dec_y+amplitude[i+1]*(dec_y/32767.0)), l, h);    // trace le segment entre le dernier point et le point actuel
+        if(i == tfre[j]){
+	  if(j+1!=ntfre){
+	    j++;
+	  }
+	  bool = 1;
+	}
+	else{
+	  bool = 0;
+	}
+        tracerSegment(dx, dec_x, dec_y, zoom, oldTemps*ZOOM_X, (dec_y+oldAmp*dec_y/32767.0), temps[i+1]*ZOOM_X, (double) (dec_y+amplitude[i+1]*(dec_y/32767.0)), l, h,bool);    // trace le segment entre le dernier point et le point actuel
         
         // recuperer le dernier point tracer
         oldTemps = temps[i+1]; oldAmp = amplitude[i+1];
@@ -319,11 +360,11 @@ void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double 
     // reactualise l'affichage
     MLV_actualise_window();
     // affiche pour le debugage le nombre de point traces a l'ecran
-    if (verbeux)
-        fprintf(stderr, "Nombre de points traces %d\n", nb_point/filtre);
+    /*if (verbeux)
+      fprintf(stderr, "Nombre de points traces %d\n", nb_point/filtre);*/
 }
 
-void tracerSegment(double dx, int dec_x, int dec_y, double zoom, double x1, double y1, double x2, double y2, int l, int h){
+void tracerSegment(double dx, int dec_x, int dec_y, double zoom, double x1, double y1, double x2, double y2, int l, int h,int Tfre){
     // transformation de la coordonnee x1 (zoom + decalage du zoom) 
     x1 = (dx+x1-dec_x)*zoom;
     x1 += dec_x;
@@ -334,6 +375,11 @@ void tracerSegment(double dx, int dec_x, int dec_y, double zoom, double x1, doub
     // tracer du segment grace a MLV
     if (x1>=0 && x2>=0 && y1>=0 && y2>=0 && x1<=l && x2<=l && y1<=h && y2<=h)
         MLV_draw_line(x1, -(y1-dec_y)+dec_y, x2, -(y2-dec_y)+dec_y, MLV_rgba(255,0,0,255));
+    /********************Lucas signalisation de la fréquence***************************/
+    if(Tfre == 1){
+      MLV_draw_line(x1,0,x1,600,MLV_rgba(255,255,255,255));
+    }
+    /**********************************************************************************/
     
     /*glBegin(GL_LINES);
     //glColor3f(255*(1.0/255.0), 0, 0);
