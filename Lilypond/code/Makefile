@@ -8,4 +8,4 @@ createSheet.o:
 	$(CC) -c src/createSheet.c -o obj/createSheet.o
 
 clean:
-	rm -f obj/* src/~ bin/createSheet 
+	rm -f obj/* src/~ bin/createSheet bin/partition.ly

@@ -1,75 +1,133 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include "math.h"
 #include "../inc/createSheet.h"
 
 void init_ly(FILE* f){
-	fprintf(f, "\\version \"2.18.2\" { \n");
-	fprintf(f, "\\language \"english\"\n"); 
+    fprintf(f, "\\version \"2.18.2\" { \n");
+    fprintf(f, "\\language \"english\"\n"); 
 }
+
 
 void lire_ecrire(FILE* input, FILE* output){
-	char notes;
-	int metrique,temps;
-	double temps_restant;
+    int i;
+    char note;
+    int duree;
+    int metrique, temps, nb_notes;
+    double temps_restant;
 
-	fscanf(input, "%d %d", &temps,&metrique);
-	fprintf(output, "\\time %d\\%d\n", temps, metrique);
-	temps_restant=temps;
-	do{
-            fprintf(stderr,"**debuggage lire_ecrire\n");
-            fscanf(input, "%c %d", &notes,&temps);
-            temps_restant -= metrique/temps;
-            if(temps_restant <0){
-                if(temps_restant ==  2.0*temps){
-                    fprintf(output, "%c%d( %c%d)\n",notes,temps*2, notes,temps*2);	
-                }
-                else {
-                    decoupage_liaison(notes,metrique,temps,temps_restant,output);//devrait marcher pour 4/4 TODO revoir pour autre métriques
-                    
-                }
-		
-                //fprintf(output,"%c%d",notes,); Decouper puis liaison quand c'est inferieur recupere la note qu'on est en train de traiter prendre son temps la diviser par deux
+    fscanf(input, "%d\n", &nb_notes);
+    fscanf(input, "%d %d\n", &temps, &metrique);
+    fprintf(output, "\\time %d/%d\n", temps, metrique);
+        
+    temps_restant = temps;
+
+    for (i = 0; i < nb_notes; i++) {
+        fscanf(input, "%c %d\n", &note, &duree); 
+
+        temps_restant -= (double)metrique/duree;                
+        
+        if (temps_restant < 0) {
+            if (fabs(temps_restant) == (double)metrique/(double)(duree*2)) {
+                fprintf(output, "%c%d( %c%d)\n", note, duree*2, note, duree*2);
+                temps_restant = metrique + temps_restant;
             }
-            //deduire_armure
-            //remplir tableau des 12 notes possibles selon sorti pour déduire armure ??*/
-            //fputc(int caractere, output);
-            if(temps_restant ==0){
-                fprintf(output, "\n");	
+            else {
+                /*
+                  Doit marcher en métrique 4/4
+                  TODO Autres métriques
+                */
+
+                decoupage_avant_barre(temps_restant, metrique, note, output);
+                decoupage_apres_barre(temps_restant, metrique, note, output);
+
+                temps_restant = metrique - fabs(temps_restant);
+                
+                 /*
+                   Découper la note si besoin puis liaison entre deux notes.
+                   Découpage : récupérer la note qu'on est en train de traiter, prendre son temps et le diviser par 2.
+                 */
             }
+            //Il faut remettre le temps restant à sa bonne valeur
+            temps_restant = abs(temps_restant);
             
-	}while(notes != EOF );
-        
-        
+            /*
+              deduire_armure
+              remplir tableau des 12 notes possibles selon sorti pour déduire armure ??
+            */
+        }
+        else if (temps_restant == 0) {
+            fprintf(output, "%c%d\n", note, duree);
+            temps_restant = temps;
+        }
+        else if (temps_restant > 0) {
+            fprintf(output, "%c%d ", note, duree);
+        } 
+    }
 }
 
-void decoupage_liaison(char notes, int metrique, int temps, int temps_restant,FILE* output){
-	//Premiere partie : le métrique/(temps restant ( négatif) + metrique) : 
-	//Calcul la note de la fin de la premiere mesure	
-	double temps_notes_seconde,temps_point_seconde;//temps_point = la moitié du temps qu'on vient de trouverœ
-	int i=0;
-	int tps_derniere_note = metrique/(temps_restant+metrique);
-	fprintf(output, "%c%d",notes,tps_derniere_note);
-	//Deuxieme partie : on va calculer la valeur absolu du temsp restant, on part de la ronde ( pour l'instant à voir lorsqu'on changera la métrique ,boucle sur puissance de 2 , où on metrique/pow(2,i), si supérieur. tant que temps restant pas egale à 0 on continue a diminuer
-	temps_restant=abs(temps_restant);
-	while(temps_restant!=0){
-		temps_notes_seconde =metrique/pow(2,i);
-		if(temps_notes_seconde < temps_restant){
-			
-			fprintf(output, "( %c%d)",notes,i);//TODO ajouter hauteur
-			temps_restant -= temps_notes_seconde;
-			temps_point_seconde= temps_notes_seconde/2;
-			if(temps_restant - temps_point_seconde>0){
-			  	fprintf(output, ".");
-				temps_restant -= temps_point_seconde;	
-			
-			}
-                        fprintf(output, ")");
-			i++;
-			
-		}
-		else{
-			i++;
-		}
-	}	
+void decoupage_avant_barre (double temps, int metrique, char note, FILE* output) {
+    int i = 0;
+
+    double temps_point_note_courante;
+    double temps_note_courante;
+    double temps_avb = metrique + temps;
+ 
+    while (temps_avb != 0 && i < 6) {
+        temps_note_courante = metrique/pow(2, i);
+        
+        if (temps_note_courante == temps_avb) {
+            fprintf(output, "%c%d( ",note, (int)pow(2, i));
+            break;
+        }
+        else if (temps_note_courante > temps_avb) {
+            i++;
+        }
+        else {
+            temps_point_note_courante = temps_note_courante/2.0;
+            temps_avb -= temps_note_courante;
+            
+            if (temps_point_note_courante == temps_avb) {
+                fprintf(output, "%c%d.(", note, (int)pow(2, i));
+                break;
+            }
+            else if (temps_point_note_courante < temps_avb) {
+                temps_avb -= temps_point_note_courante;
+                fprintf(output, "%c%d.(", note, (int)pow(2, i));
+                decoupage_apres_barre(temps_avb, metrique, note, output);
+            }
+        }
+    }
+}
+
+void decoupage_apres_barre (double temps, int metrique, char note, FILE* output) {
+    int i = 0;
+
+    double temps_point_note_courante;
+    double temps_note_courante;
+    double temps_apb = fabs(temps);
+
+    while (temps_apb != 0 && i < 6) {
+        temps_note_courante = metrique/pow(2, i);
+
+        if (temps_note_courante == temps_apb) {
+            fprintf(output, "%c%d)",note, (int)pow(2, i));
+            break;
+        }
+        else if (temps_note_courante > temps_apb) {
+            i++;
+        }
+        else {
+            fprintf(output, "%c%d", note, (int)pow(2, i));
+            temps_point_note_courante = temps_note_courante/2.0;
+            temps_apb -= temps_note_courante;
+            
+            if (temps_point_note_courante == temps_apb) {
+                fprintf(output, ".)");
+                break;
+            }
+            else if (temps_point_note_courante < temps_apb) {
+                temps_apb -= temps_point_note_courante;
+                fprintf(output, ".)(");
+                decoupage_apres_barre(temps_apb, metrique, note, output);
+            }
+        }
+    }
 }
