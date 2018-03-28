@@ -4,6 +4,7 @@
 #include <math.h>
 #include <MLV/MLV_all.h>
 #include <unistd.h>
+#include "tri_fusion_tab.h"
 
 #include "fft.h" 
 //#include "GL/gl.h"
@@ -30,6 +31,10 @@ double* tri_fusion_notes_bis(double *tab1,int nbel1,double *tab2, int nbel2);
 double cleanFrequence2(double *tabfreq,int nfre);
 double cleanFrequence3(double *tabfreq,int nfre);
 double cleanFrequence4(double *tabfreq,int nfre);
+
+elem inf(elem e1,elem e2){
+  return e1<e2;
+}
   
 void usage(char* s){   /* explique le fonctionnement du programme */
   fprintf(stderr,"Usage: %s [options] -f <fichier wav>\n",s);
@@ -649,7 +654,7 @@ double* tri_fusion_notes_bis(double *tab1, int nbel,double *tab2, int nbel2){
 }
 
 double cleanFrequence2(double *tabfreq,int nfre){
-  double *tab = tri_fusion_notes(tabfreq,nfre);
+  double *tab = tri_fusion(tabfreq,nfre,inf);
   return tab[nfre/2];
   
 }
@@ -658,7 +663,7 @@ double cleanFrequence3(double *tabfreq,int nfre){
   int del = nfre*0.01,i;
   printf("del %d\n",del);
   double frequencemax = 0;
-  double *tab = tri_fusion_notes(tabfreq,nfre);
+  double *tab = tri_fusion(tabfreq,nfre,inf);
   tab = &tab[del];
   nfre -= del;
   for(i = 0;i<nfre;i++){
@@ -672,7 +677,7 @@ double cleanFrequence3(double *tabfreq,int nfre){
 double cleanFrequence4(double *tabfreq,int nfre){
   int maxcompt = 0,max,i;
   double /*frequencemax = 0,*/vmax = 0,v=0;
-  double *tab = tri_fusion_notes(tabfreq,nfre);
+  double *tab = tri_fusion(tabfreq,nfre,inf);
 
   v = tab[0];
   max = 1;
