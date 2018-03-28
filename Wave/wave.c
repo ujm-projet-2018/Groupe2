@@ -28,7 +28,9 @@ double cleanFrequence(double *tabfreq,int nfre);
 double* tri_fusion_notes(double *tab,int nbel);
 double* tri_fusion_notes_bis(double *tab1,int nbel1,double *tab2, int nbel2);
 double cleanFrequence2(double *tabfreq,int nfre);
-
+double cleanFrequence3(double *tabfreq,int nfre);
+double cleanFrequence4(double *tabfreq,int nfre);
+  
 void usage(char* s){   /* explique le fonctionnement du programme */
   fprintf(stderr,"Usage: %s [options] -f <fichier wav>\n",s);
   fprintf(stderr,"      -f <fichier> : permet de preciser le fichier a utiliser (obligatoire)\n");
@@ -279,9 +281,20 @@ int main(int argc, char** argv){
          // on avance de filtre-1 elements dans le fichier (accelere le traitement)
          fseek(fich, (long) ((filtre-1)*(bitsPerSample/8)), SEEK_CUR);
     }
-    frequencemax = cleanFrequence2(tabfreq,nfre);
-    printf("%f\n",frequencemax);
+    frequencemax = cleanFrequence(tabfreq,nfre);
+    printf("Frequence 1 : %f\n",frequencemax);
     detectionnotes(frequencemax);
+    frequencemax = cleanFrequence2(tabfreq,nfre);
+    printf("\nFrequence 2 : %f\n",frequencemax);
+    detectionnotes(frequencemax);
+    frequencemax = cleanFrequence3(tabfreq,nfre);
+    printf("\nFrequence 3 : %f\n",frequencemax);
+    detectionnotes(frequencemax);
+    frequencemax = cleanFrequence4(tabfreq,nfre);
+    printf("\nFrequence 4 : %f\n",frequencemax);
+    detectionnotes(frequencemax);
+
+    
     
     // Analyse de fourier sur le signal
     n = ifreqmax2-ifreqmax1;  // calcul du nombre de point a analyser pour la frequence max
@@ -568,58 +581,24 @@ void detectionnotes(double ff){
     for(i=0;i<12;i++){
       if(i == 11){
 	if(ff < (notes[i][j]+(notes[0][j+1] - notes[i][j])/2) && ff > (notes[i][j]-(notes[i][j]-notes[i-1][j])/2) ) {
-	  if(i == 0){
-	    printf("note : %s\n",notesS[0]);
+	    printf("note : %s\n",notesS[i]);
 	    fin = 1;
 	    break;
-	  }
-	  else{
-	    printf("note : %s\n",notesS[i-1]);
-	    fin = 1;
-	    break;
-	  }
-	  if(i == 11 && j == 7){
-	    printf("note : %s\n",notesS[11]);
-	    fin= 1;
-	    break;
-	  }
 	}
       }
-      if(i == 0){
+      else if(i == 0){
 	if(ff < (notes[i][j]+(notes[i+1][j] - notes[i][j])/2) && ff > (notes[i][j]-(notes[i][j]-notes[11][j-1])/2) ) {
 	  if(i == 0){
 	    printf("note : %s\n",notesS[0]);
 	    fin = 1;
 	    break;
 	  }
-	  else{
-	    printf("note : %s\n",notesS[i-1]);
-	    fin = 1;
-	    break;
-	  }
-	  if(i == 11 && j == 7){
-	    printf("note : %s\n",notesS[11]);
-	    fin= 1;
-	    break;
-	  }
 	}
       }
       else if(ff < (notes[i][j]+(notes[i+1][j] - notes[i][j])/2) && ff > (notes[i][j]-(notes[i][j]-notes[i-1][j])/2) ) {
-	if(i == 0){
-	  printf("note : %s\n",notesS[0]);
-	  fin = 1;
-	  break;
-	}
-	else{
-	  printf("note : %s\n",notesS[i-1]);
-	  fin = 1;
-	  break;
-	}
-	if(i == 11 && j == 7){
-	  printf("note : %s\n",notesS[11]);
-	  fin= 1;
-	  break;
-	}
+	printf("note : %s\n",notesS[i]);
+	fin = 1;
+	break;
       }
     }
     if(fin == 1){
@@ -670,16 +649,48 @@ double* tri_fusion_notes_bis(double *tab1, int nbel,double *tab2, int nbel2){
 }
 
 double cleanFrequence2(double *tabfreq,int nfre){
-  int i;
-  /*for(i = 0;i < nfre;i++){
-    printf("%f\n",tabfreq[i]);
-  }
-  printf("FIN\n");*/
   double *tab = tri_fusion_notes(tabfreq,nfre);
-  for(i = 0;i < nfre;i++){
-    printf("%f\n",tab[i]);
-  }
   return tab[nfre/2];
+  
+}
+
+double cleanFrequence3(double *tabfreq,int nfre){
+  int del = nfre*0.01,i;
+  printf("del %d\n",del);
+  double frequencemax = 0;
+  double *tab = tri_fusion_notes(tabfreq,nfre);
+  tab = &tab[del];
+  nfre -= del;
+  for(i = 0;i<nfre;i++){
+    frequencemax += tabfreq[i];
+  }
+  frequencemax /= nfre;
+  return frequencemax;
+  
+}
+
+double cleanFrequence4(double *tabfreq,int nfre){
+  int maxcompt = 0,max,i;
+  double /*frequencemax = 0,*/vmax = 0,v=0;
+  double *tab = tri_fusion_notes(tabfreq,nfre);
+
+  v = tab[0];
+  max = 1;
+
+  for(i = 1;i<nfre;i++){
+    if((int)tabfreq[i]==(int)v){
+      max++;
+    }
+    else{
+      if(max > maxcompt){
+	maxcompt = max;
+	vmax = tabfreq[i-1];
+      }
+      v = tabfreq[i-1];
+      max = 0;
+    }
+  }
+  return vmax;
   
 }
 
