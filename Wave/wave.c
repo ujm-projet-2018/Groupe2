@@ -25,8 +25,9 @@ void tracerPoint(double dx, int dec_x, double zoom, double x1, double y1, int l,
 
 void detectionnotes(double ff);
 double cleanFrequence(double *tabfreq,int nfre);
-
-
+double* tri_fusion_notes(double *tab,int nbel);
+double* tri_fusion_notes_bis(double *tab1,int nbel1,double *tab2, int nbel2);
+double cleanFrequence2(double *tabfreq,int nfre);
 
 void usage(char* s){   /* explique le fonctionnement du programme */
   fprintf(stderr,"Usage: %s [options] -f <fichier wav>\n",s);
@@ -278,7 +279,7 @@ int main(int argc, char** argv){
          // on avance de filtre-1 elements dans le fichier (accelere le traitement)
          fseek(fich, (long) ((filtre-1)*(bitsPerSample/8)), SEEK_CUR);
     }
-    frequencemax = cleanFrequence(tabfreq,nfre);
+    frequencemax = cleanFrequence2(tabfreq,nfre);
     printf("%f\n",frequencemax);
     detectionnotes(frequencemax);
     
@@ -628,6 +629,59 @@ void detectionnotes(double ff){
   
 }
 
+double* tri_fusion_notes(double *tab,int nbel){
+  int nbel2 = 0;
+  double * tab2 = NULL;
+  if(nbel < 2){
+    return tab;
+  }
+  nbel2 = nbel - (nbel/2);
+  tab2 = &tab[nbel/2];
+  return tri_fusion_notes_bis(tri_fusion_notes(tab,nbel/2),nbel/2,tri_fusion_notes(tab2,nbel2),nbel2);
+  
+}
+double* tri_fusion_notes_bis(double *tab1, int nbel,double *tab2, int nbel2){
+  int i;
+  double *tab,*tmp;
+  tab = (double*)malloc(sizeof(double)*(nbel+nbel2));
+  tmp = (double*)malloc(sizeof(double)*(nbel+nbel2)-1);
+  if(nbel == 0) return tab2;
+  if(nbel2 == 0) return tab1;
+  if(tab1[0] < tab2[0] ){
+    tab[0] = tab1[0];
+    nbel --;
+    tmp = tri_fusion_notes_bis(&tab1[1],nbel,tab2,nbel2);
+    //printf("%d %d\n",nbel,nbel2);
+    for(i=1;i<nbel+nbel2+1;i++){
+      tab[i]=tmp[i-1];
+    }
+    return tab;
+  }
+  else{
+    tab[0] = tab2[0];
+    nbel2--;
+    tmp = tri_fusion_notes_bis(tab1,nbel,&tab2[1],nbel2);
+    //printf("%d %d\n",nbel,nbel2);
+    for(i=1;i<nbel+nbel2+1;i++){
+      tab[i]=tmp[i-1];
+    }
+    return tab;
+  }
+}
+
+double cleanFrequence2(double *tabfreq,int nfre){
+  int i;
+  /*for(i = 0;i < nfre;i++){
+    printf("%f\n",tabfreq[i]);
+  }
+  printf("FIN\n");*/
+  double *tab = tri_fusion_notes(tabfreq,nfre);
+  for(i = 0;i < nfre;i++){
+    printf("%f\n",tab[i]);
+  }
+  return tab[nfre/2];
+  
+}
 
 double cleanFrequence(double *tabfreq,int nfre){
   int i,j;
