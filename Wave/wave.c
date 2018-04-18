@@ -24,7 +24,7 @@ void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double 
 void tracerSegment(double dx, int dec_x, int dec_y, double zoom, double x1, double y1, double x2, double y2, int l, int h,int bool);
 void tracerPoint(double dx, int dec_x, double zoom, double x1, double y1, int l, int h);
 
-void detectionnotes(double ff);
+//void detectionnotes(double ff);
 double cleanFrequence(double *tabfreq,int nfre);
 double* tri_fusion_notes(double *tab,int nbel);
 double* tri_fusion_notes_bis(double *tab1,int nbel1,double *tab2, int nbel2);
@@ -61,12 +61,13 @@ int main(int argc, char** argv){
     int op;    /* sert a determiner les options selectionner */
     int n, depart; // taille pour la fft et indice de depart dans le tableau des amplitudes
 
-    int ampmax = 0, *tfre, ntfre = 0,nfre=0, ampmaxold = 0, ifreq1 = 0, ifreq2 = 0, ifreqmax1, ifreqmax2;
-    double frequence = 0, frequencemax = -1000000, t1 = 0, t2 = 0,*tabfreq;
-    
+    //int ampmax = 0, *tfre, ntfre = 0,nfre=0, ampmaxold = 0, ifreq1 = 0, ifreq2 = 0, ifreqmax1, ifreqmax2;
+    //double frequence = 0, frequencemax = -1000000, t1 = 0, t2 = 0,*tabfreq;
+    float t2;
     complex* fft; // tableau comptenant le resultat de la fft
     short* amplitudes;   // tableau regroupant les amplitudes a chaque point du signal
     float* temps;    // tableau regroupant le temps associee a l'amplitude de meme indice dans son tableau
+    signal s;
     double zoom = 1.0, dx = 0.0;   // variable de transformations geometriques
     
     short amp, defausse_short, nbCanaux, bitsPerSample, bytePerBloc;
@@ -216,8 +217,8 @@ int main(int argc, char** argv){
     // initialisation des tableaux
     amplitudes = (short*) calloc(sizeof(short), nb_point);
     temps = (float*) calloc(sizeof(float), nb_point);
-    tfre = (int*) malloc(sizeof(int)*1);
-    tabfreq = (double*) malloc(sizeof(double)*1);
+    //tfre = (int*) malloc(sizeof(int)*1);
+    //tabfreq = (double*) malloc(sizeof(double)*1);
     
     // boucle principale lance une fois l'entete du fichier decrypte: analyse des donnees
     
@@ -226,19 +227,19 @@ int main(int argc, char** argv){
          amp = 0;
          // lecture des donnees du fichier WAVE
          fread(&amp, sizeof(char)*(bitsPerSample/8), 1, fich);
-         amp /=500;
+         /*amp /=500;
 	 if(amp > 1){
 	   amp*=10000;
-	 }
+	   }*/
          // Lucas fondamental***********************************************************
 	     t2 = (compteur/(bitsPerSample/8))*(1.0/freqEch);
-	     ifreq2 = compteur/filtre;
+	     /*ifreq2 = compteur/filtre;
 	     if (ampmax == 0){
 	       ampmax = amp;
 	     }
 	     if(amp > ampmax-(ampmax*0.30) && amp < ampmax*1.30 && t2 > t1+0.001){
 	       if(ampmax != 0){
-		 frequence = 1/(t2-t1); 
+	       frequence = 1/(t2-t1); */
 	         /*if(ampmax > 2*ampmaxold){
 	           frequencemax = 0;
 		   }*/
@@ -246,9 +247,9 @@ int main(int argc, char** argv){
 		   nfre--;
 		   frequencemax = 0;
 		   }*/
-	         if(frequence > frequencemax){  // enregistre la nouvelle frequence max
+	     // if(frequence > frequencemax){  // enregistre la nouvelle frequence max
 	           // recupere les indices de la frequence maximale
-	           ifreqmax1 = ifreq1;  
+      /*      ifreqmax1 = ifreq1;  
 	           ifreqmax2 = ifreq2;
 	           frequencemax = frequence;
 	         }
@@ -267,7 +268,7 @@ int main(int argc, char** argv){
 	       //t1 = t2;
 	       //ifreq1 = ifreq2;
 	       ampmax = amp;
-	     }
+	       }*/
 	     //*****************************************************************************
 	     
 	     // affichage des infos sur console
@@ -279,6 +280,7 @@ int main(int argc, char** argv){
          // remplissage du tableau
          amplitudes[compteur/filtre] = amp;
          temps[compteur/filtre] = (compteur/(bitsPerSample/8))*(1.0/freqEch);
+	 //printf("%d %f\n",compteur,temps[compteur/filtre]);
          
          // gestion des compteurs
          compteur += filtre;
@@ -286,7 +288,10 @@ int main(int argc, char** argv){
          // on avance de filtre-1 elements dans le fichier (accelere le traitement)
          fseek(fich, (long) ((filtre-1)*(bitsPerSample/8)), SEEK_CUR);
     }
-    frequencemax = cleanFrequence(tabfreq,nfre);
+    s = analyse_notes(amplitudes,temps,nb_point);
+    
+    printf("retour Analyse: %s \n",s.note);
+    /*frequencemax = cleanFrequence(tabfreq,nfre);
     printf("Frequence 1 : %f\n",frequencemax);
     detectionnotes(frequencemax);
     frequencemax = cleanFrequence2(tabfreq,nfre);
@@ -297,22 +302,22 @@ int main(int argc, char** argv){
     detectionnotes(frequencemax);
     frequencemax = cleanFrequence4(tabfreq,nfre);
     printf("\nFrequence 4 : %f\n",frequencemax);
-    detectionnotes(frequencemax);
+    detectionnotes(frequencemax);*/
 
     
     
     // Analyse de fourier sur le signal
-    n = ifreqmax2-ifreqmax1;  // calcul du nombre de point a analyser pour la frequence max
+    //n = ifreqmax2-ifreqmax1;  // calcul du nombre de point a analyser pour la frequence max
     //fprintf(stderr, "nb point fft = %d | freqence max = %f\n", n, frequencemax);
-    depart = ifreqmax1;   // point de depart dans le tableau des amplitudes  pour l'analyse sur la frequence max
-    n = pow(2, ((int) log2(n*10))+1);  // transmets la premiere puissance de 2 superieur au nombre de point qui seront analyse
-    fft = analyseFFT(signalPeriodique(amplitudes, ifreqmax1, ifreqmax2-ifreqmax1, 10), 0, (ifreqmax2-ifreqmax1)*10, n);  // 10 = nombre de fois que la periode trouve doit etre repete
+    //depart = ifreqmax1;   // point de depart dans le tableau des amplitudes  pour l'analyse sur la frequence max
+    //n = pow(2, ((int) log2(n*10))+1);  // transmets la premiere puissance de 2 superieur au nombre de point qui seront analyse
+    //fft = analyseFFT(signalPeriodique(amplitudes, ifreqmax1, ifreqmax2-ifreqmax1, 10), 0, (ifreqmax2-ifreqmax1)*10, n);  // 10 = nombre de fois que la periode trouve doit etre repete
     
     
     //MLV_Keyboard_button touche;
     if (son != NULL && op_son)
         MLV_play_sound(son, 1.0f);
-    tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, anim, verbeux, debug, tfre, ntfre);
+    tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, anim, verbeux, debug, s.tfre, s.ntfre);
     // visualisation du graphe
     while (!arret){
          // nettoyage de la fenetre
@@ -331,50 +336,50 @@ int main(int argc, char** argv){
              // nettoyage de la fenetre
              MLV_clear_window(MLV_rgba(0, 0, 0, 255));
              // appel la fonction de tracer
-             if (spectre)
-                  tracer_spectre(fft, clicx, clicy, n, dx, zoom, 0, 50, echelley, freqEch, l, h);
-             else tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,tfre,ntfre);
+             /*if (spectre)
+	       tracer_spectre(fft, clicx, clicy, n, dx, zoom, 0, 50, echelley, freqEch, l, h);
+	       else*/ tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,s.tfre,s.ntfre);
          }else if (MLV_get_keyboard_state(275) == MLV_PRESSED){   // fleche gauche
              dx -= VITESSE_DX*(1.0/zoom);
              // nettoyage de la fenetre   
              MLV_clear_window(MLV_rgba(0, 0, 0, 255));
              // appel la fonction de tracer
-             if (spectre)
+             /*if (spectre)
                   tracer_spectre(fft, clicx, clicy, n, dx, zoom, 0, 50, echelley, freqEch, l, h);
-             else tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,tfre,ntfre);
+		  else*/ tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,s.tfre,s.ntfre);
          }else if (MLV_get_keyboard_state(274) == MLV_PRESSED){     // fleche bas
              zoom /= VITESSE_ZOOM;
              // nettoyage de la fenetre   
              MLV_clear_window(MLV_rgba(0, 0, 0, 255));
              // appel la fonction de tracer
-             if (spectre)
+             /*if (spectre)
                   tracer_spectre(fft, clicx, clicy, n, dx, zoom, 0, 50, echelley, freqEch, l, h);
-             else tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,tfre,ntfre);
+		  else*/ tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,s.tfre,s.ntfre);
          }else if (MLV_get_keyboard_state(273) == MLV_PRESSED){      // fleche haut
              zoom *= VITESSE_ZOOM;
              // nettoyage de la fenetre   
              MLV_clear_window(MLV_rgba(0, 0, 0, 255));
              // appel la fonction de tracer
-             if (spectre)
+             /*if (spectre)
                   tracer_spectre(fft, clicx, clicy, n, dx, zoom, 0, 50, echelley, freqEch, l, h);
-             else tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,tfre,ntfre);
+		  else*/ tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,s.tfre,s.ntfre);
          }else if (MLV_get_mouse_button_state(MLV_BUTTON_LEFT) == MLV_PRESSED){
              MLV_get_mouse_position(&clicx, &clicy);
              // nettoyage de la fenetre   
              MLV_clear_window(MLV_rgba(0, 0, 0, 255));
              // appel la fonction de tracer
-             if (spectre)
+             /*if (spectre)
                   tracer_spectre(fft, clicx, clicy, n, dx, zoom, 0, 50, echelley, freqEch, l, h);
-             else tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,tfre,ntfre);
+		  else*/ tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,s.tfre,s.ntfre);
          }else if (MLV_get_keyboard_state(102) == MLV_PRESSED){   // touche 'f'
              // changement de la fonction tracer: spectre ou signal
              spectre = 1-spectre;
              // nettoyage de la fenetre   
              MLV_clear_window(MLV_rgba(0, 0, 0, 255));
              // tracer de la courbe
-             if (spectre)
+             /*if (spectre)
                   tracer_spectre(fft, clicx, clicy, n, dx, zoom, 0, 50, echelley, freqEch, l, h);
-             else tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,tfre,ntfre);
+		  else*/ tracerCourbe(clicx, clicy, dx, dec_x, dec_y, zoom, amplitudes, temps, nb_point, precision, l, h, 0, verbeux, debug,s.tfre,s.ntfre);
          }else if (MLV_get_keyboard_state(27) == MLV_PRESSED){
              arret = 1;
          }
