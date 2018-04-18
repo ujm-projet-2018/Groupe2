@@ -61,6 +61,7 @@ int main(int argc, char** argv){
     int op;    /* sert a determiner les options selectionner */
     int n, depart; // taille pour la fft et indice de depart dans le tableau des amplitudes
 
+    int i;
     int ampmax = 0, *tfre, ntfre = 0,nfre=0, ampmaxold = 0, ifreq1 = 0, ifreq2 = 0, ifreqmax1, ifreqmax2;
     double frequence = 0, frequencemax = -1000000, t1 = 0, t2 = 0,*tabfreq;
     
@@ -283,6 +284,7 @@ int main(int argc, char** argv){
          // on avance de filtre-1 elements dans le fichier (accelere le traitement)
          fseek(fich, (long) ((filtre-1)*(bitsPerSample/8)), SEEK_CUR);
     }
+    
     frequencemax = cleanFrequence(tabfreq,nfre);
     printf("Frequence 1 : %f\n",frequencemax);
     detectionnotes(frequencemax);
@@ -442,9 +444,9 @@ void tracerSegment(double dx, int dec_x, int dec_y, double zoom, double x1, doub
         MLV_draw_line(x1, -(y1-dec_y)+dec_y, x2, -(y2-dec_y)+dec_y, MLV_rgba(255,0,0,255));
     /********************Lucas signalisation de la fréquence***************************/
     if(Tfre == 1){
-      MLV_draw_line(x1,0,x1,600,MLV_rgba(255,255,255,255));
+    //  MLV_draw_line(x1,0,x1,600,MLV_rgba(255,255,255,255));
     }
-    /**********************************************************************************/
+    /**1********************************************************************************/
     
     /*glBegin(GL_LINES);
     //glColor3f(255*(1.0/255.0), 0, 0);

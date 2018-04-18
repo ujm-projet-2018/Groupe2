@@ -193,9 +193,11 @@ int main(int argc, char** argv){
     // lancement de l'analyse
     fft = analyse(amplitudes, depart, fin, log2(nb_point_fourier));
     
-    fprintf(stderr, "depart = %d(%f), fin = %d(%f), freq = %lf\n", depart, temps[depart], fin, temps[fin], (longueur_fenetre/1000.0)/nb_point_fourier);
+    fprintf(stderr, "depart = %d(%f), fin = %d(%f), freq = %lf\n", depart, temps[depart], fin, temps[fin], nb_point_fourier*(1000.0/longueur_fenetre));
     
-    tracer_spectre(fft, clicx, clicy, /*pow(2, log2(*/nb_point_fourier/*))*/, dx, zoom, dec_x, dec_y, echelley, /*(longueur_fenetre/1000.0)/nb_point_fourier*/nb_point_fourier, l, h);
+    // nettoyage de la fenetre
+    MLV_clear_window(MLV_rgba(1, 1, 1, 255));
+    tracer_spectre(fft, clicx, clicy, /*pow(2, log2(*/nb_point_fourier/*))*/, dx, zoom, dec_x, dec_y, echelley, freqEch, l, h);
     // visualisation du graphe
     while (!arret){
          // nettoyage de la fenetre
@@ -212,33 +214,33 @@ int main(int argc, char** argv){
          if (MLV_get_keyboard_state(276) == MLV_PRESSED){   // fleche droite
              dx += VITESSE_DX*(1.0/zoom);
              // nettoyage de la fenetre
-             MLV_clear_window(MLV_rgba(0, 0, 0, 255));
+             MLV_clear_window(MLV_rgba(1, 1, 1, 255));
              // appel la fonction de tracer
-             tracer_spectre(fft, clicx, clicy, /*pow(2, log2(*/nb_point_fourier/*))*/, dx, zoom, dec_x, dec_y, echelley, /*(longueur_fenetre/1000.0)/nb_point_fourier*/nb_point_fourier, l, h);
+             tracer_spectre(fft, clicx, clicy, /*pow(2, log2(*/nb_point_fourier/*))*/, dx, zoom, dec_x, dec_y, echelley, freqEch, l, h);
          }else if (MLV_get_keyboard_state(275) == MLV_PRESSED){   // fleche gauche
              dx -= VITESSE_DX*(1.0/zoom);
              // nettoyage de la fenetre   
-             MLV_clear_window(MLV_rgba(0, 0, 0, 255));
+             MLV_clear_window(MLV_rgba(1, 1, 1, 255));
              // appel la fonction de tracer
-             tracer_spectre(fft, clicx, clicy, /*pow(2, log2(*/nb_point_fourier/*))*/, dx, zoom, dec_x, dec_y, echelley, /*(longueur_fenetre/1000.0)/nb_point_fourier*/nb_point_fourier, l, h);
+             tracer_spectre(fft, clicx, clicy, /*pow(2, log2(*/nb_point_fourier/*))*/, dx, zoom, dec_x, dec_y, echelley, freqEch, l, h);
          }else if (MLV_get_keyboard_state(274) == MLV_PRESSED){     // fleche bas
              zoom /= VITESSE_ZOOM;
              // nettoyage de la fenetre   
-             MLV_clear_window(MLV_rgba(0, 0, 0, 255));
+             MLV_clear_window(MLV_rgba(1, 1, 1, 255));
              // appel la fonction de tracer
-             tracer_spectre(fft, clicx, clicy, /*pow(2, log2(*/nb_point_fourier/*))*/, dx, zoom, dec_x, dec_y, echelley, /*(longueur_fenetre/1000.0)/nb_point_fourier*/nb_point_fourier, l, h);
+             tracer_spectre(fft, clicx, clicy, /*pow(2, log2(*/nb_point_fourier/*))*/, dx, zoom, dec_x, dec_y, echelley, freqEch, l, h);
          }else if (MLV_get_keyboard_state(273) == MLV_PRESSED){      // fleche haut
              zoom *= VITESSE_ZOOM;
              // nettoyage de la fenetre   
-             MLV_clear_window(MLV_rgba(0, 0, 0, 255));
+             MLV_clear_window(MLV_rgba(1, 1, 1, 255));
              // appel la fonction de tracer
-             tracer_spectre(fft, clicx, clicy, /*pow(2, log2(*/nb_point_fourier/*))*/, dx, zoom, dec_x, dec_y, echelley, /*(longueur_fenetre/1000.0)/nb_point_fourier*/nb_point_fourier, l, h);
+             tracer_spectre(fft, clicx, clicy, /*pow(2, log2(*/nb_point_fourier/*))*/, dx, zoom, dec_x, dec_y, echelley, freqEch, l, h);
          }else if (MLV_get_mouse_button_state(MLV_BUTTON_LEFT) == MLV_PRESSED){
              MLV_get_mouse_position(&clicx, &clicy);
              // nettoyage de la fenetre   
-             MLV_clear_window(MLV_rgba(0, 0, 0, 255));
+             MLV_clear_window(MLV_rgba(1, 1, 1, 255));
              // appel la fonction de tracer
-             tracer_spectre(fft, clicx, clicy, /*pow(2, log2(*/nb_point_fourier/*))*/, dx, zoom, dec_x, dec_y, echelley, /*(longueur_fenetre/1000.0)/nb_point_fourier*/nb_point_fourier, l, h);
+             tracer_spectre(fft, clicx, clicy, /*pow(2, log2(*/nb_point_fourier/*))*/, dx, zoom, dec_x, dec_y, echelley, freqEch, l, h);
          }else if (MLV_get_keyboard_state(27) == MLV_PRESSED){
              arret = 1;
          }
@@ -287,14 +289,15 @@ complex* recupere_point_complex(short* amplitudes, int depart, int fin, int n){
           return tab;
      }
      
-     pas = (fin-depart)/n;
+     /*pas = (fin-depart)/n;
      if (pas == 0){
          fprintf(stderr, "Pas assez de point dans l'intervalle pour faire l'analyse de fourier\n");
          exit(-1);
-     }
+     }*/
      
-     for (i=0; i<(n*pas); i+=pas){
-         tab[i/pas] = amplitudes[depart+i]+I*0;
+     for (i=0; i<n; i++/*(n*pas); i+=pas*/){
+         tab[i] = amplitudes[depart+i]+I*0;
+         //tab[i/pas] = amplitudes[depart+i]+I*0;
      }
      
      
@@ -411,9 +414,10 @@ void tracer_spectre(complex* fft, int clicx, int clicy, int n, double dx, double
      double max = tab_max(fft, n);
      double x = 0, y = cabs(fft[0])*echelley/max;
      
-     for (i = 0; i<n-1; i++){
-          tracerSegment(dx, l/2, dec_y, zoomx, x, y, ((double) (i+1)/n)*freqEch, cabs(fft[i+1])*echelley/max, l, h);
-          x = ((double) (i+1)/n)*freqEch;
+     for (i = 0; i<n/2-1; i++){
+          //fprintf(stderr, "x = %lf\n", x);
+          tracerSegment(dx, l/2, dec_y, zoomx, x, y, freqEch*(i+1)/(double) n, cabs(fft[i+1])*echelley/max, l, h);
+          x = freqEch*((i+1)/(double) n);
           y = cabs(fft[i+1])*echelley/max;
      }
      
@@ -433,7 +437,7 @@ void tracer_repere_spectre(int clicx, int clicy, double dx, double zoomx, int de
     text[9] = '\0';
     
     czoom = l/2-dx;   // on zoom les valeures par rapport a leur representation et non a leur coordonnees dans la fenetre
-    
+    //fprintf(stderr, "freqEch = %d\n", freqEch);
     // trace de la croix permettant de connaitre une coordonnee precise
     if (clicx != 0 && clicy != 0){
         MLV_draw_line(0, clicy, l, clicy, MLV_rgba(0, 255, 0, 255));
@@ -442,10 +446,11 @@ void tracer_repere_spectre(int clicx, int clicy, double dx, double zoomx, int de
     
     // tracer la valeur en x et y pointee par la souris
     if (clicx != 0 && clicy != 0){
-        valeur = (clicx-dx)-czoom;   // je recentre ma valeur x-dx sur l'origine
+        valeur = (clicx)*((double) freqEch)/n;
+        valeur = (valeur-dx)-czoom;   // je recentre ma valeur x-dx sur l'origine
         valeur /= zoomx;    // je fais la mise a l'echelle inverse au zoom
         valeur += czoom;   // je repositionne ma valeur
-        valeur *= ((double) freqEch)/n;
+        //valeur *= ((double) freqEch)/n;
         sprintf(valeurs,"(%.3lf, %.3lf)", valeur, (double) (h-dec_y-clicy)*(max/h));
     }
     MLV_draw_text(l-150, 25, valeurs, MLV_rgba(0, 255, 0, 255));
@@ -455,14 +460,15 @@ void tracer_repere_spectre(int clicx, int clicy, double dx, double zoomx, int de
     // trace la graduation
     for (i=pas/nb_grad; i<l; i+=(pas/nb_grad)){
         if (i % pas == 0){
-            valeur = i-dx-czoom;   // je recentre ma valeur i-dx sur l'origine
+            valeur = (i)*((double) freqEch)/n;
+            valeur = (valeur-dx)-czoom;   // je recentre ma valeur x-dx sur l'origine
             valeur /= zoomx;    // je fais la mise a l'echelle inverse au zoom
             valeur += czoom;   // je repositionne ma valeur
-            valeur *= ((double) freqEch)/n;
+            //valeur *= ((double) freqEch)/n;
             sprintf(text,"%.3lf", valeur);
             MLV_get_size_of_text(text, &tailleText, NULL);
             MLV_draw_line(i, h-5, i, h-15, MLV_rgba(0, 0, 255, 255));
-            if (n-valeur > 0 && n-valeur <= n){
+            if (n-valeur > 0 && n-valeur <= freqEch){
                  MLV_draw_text((i-tailleText/2), h-30, text, MLV_rgba(0, 0, 255, 255));
             }
         }else{
