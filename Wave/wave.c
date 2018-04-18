@@ -226,23 +226,26 @@ int main(int argc, char** argv){
          amp = 0;
          // lecture des donnees du fichier WAVE
          fread(&amp, sizeof(char)*(bitsPerSample/8), 1, fich);
-         
+         amp /=500;
+	 if(amp > 1){
+	   amp*=10000;
+	 }
          // Lucas fondamental***********************************************************
 	     t2 = (compteur/(bitsPerSample/8))*(1.0/freqEch);
 	     ifreq2 = compteur/filtre;
 	     if (ampmax == 0){
 	       ampmax = amp;
 	     }
-	     if(amp > ampmax-(ampmax*0.17) && amp < ampmax*1.17 && t2 > t1+0.001){
+	     if(amp > ampmax-(ampmax*0.30) && amp < ampmax*1.30 && t2 > t1+0.001){
 	       if(ampmax != 0){
 		 frequence = 1/(t2-t1); 
-	         if(ampmax > 2*ampmaxold){
+	         /*if(ampmax > 2*ampmaxold){
 	           frequencemax = 0;
-	         }
-	         if(frequencemax >2*frequence){
+		   }*/
+	         /*if(frequencemax >2*frequence){
 		   nfre--;
 		   frequencemax = 0;
-		 }
+		   }*/
 	         if(frequence > frequencemax){  // enregistre la nouvelle frequence max
 	           // recupere les indices de la frequence maximale
 	           ifreqmax1 = ifreq1;  

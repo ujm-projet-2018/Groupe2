@@ -26,7 +26,7 @@ void detectionnotes(double ff){
     for(i=0;i<12;i++){
       if(i == 11){
 	if(ff < (notes[i][j]+(notes[0][j+1] - notes[i][j])/2) && ff > (notes[i][j]-(notes[i][j]-notes[i-1][j])/2) ) {
-	    printf("note : %s\n",notesS[i]);
+	  printf("note : %s %d\n",notesS[i],j);
 	    fin = 1;
 	    break;
 	}
@@ -34,14 +34,14 @@ void detectionnotes(double ff){
       else if(i == 0){
 	if(ff < (notes[i][j]+(notes[i+1][j] - notes[i][j])/2) && ff > (notes[i][j]-(notes[i][j]-notes[11][j-1])/2) ) {
 	  if(i == 0){
-	    printf("note : %s\n",notesS[0]);
+	    printf("note : %s %d\n",notesS[0],j);
 	    fin = 1;
 	    break;
 	  }
 	}
       }
       else if(ff < (notes[i][j]+(notes[i+1][j] - notes[i][j])/2) && ff > (notes[i][j]-(notes[i][j]-notes[i-1][j])/2) ) {
-	printf("note : %s\n",notesS[i]);
+	printf("note : %s %d\n",notesS[i],j);
 	fin = 1;
 	break;
       }
