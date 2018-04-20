@@ -19,7 +19,7 @@ FILE* output : fichier d'écriture de la partition
 */
 void lire_ecrire(FILE* input, FILE* output);
 
-void decoupage_avant_barre (double temps, int metrique, char note, FILE* output);
-void decoupage_apres_barre (double temps, int metrique, char note, FILE* output);
-
+void decoupage_avant_barre(double temps, int metrique, char note, FILE* output);
+void decoupage_apres_barre(double temps, int metrique, char note, FILE* output);
+int** lire_remplir(char* name);
 #endif

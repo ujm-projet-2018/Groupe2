@@ -4,29 +4,23 @@
 
 
 
-int main (int argc,char* argv[]){
+int main (int argc, char* argv[]) {
+    FILE* output = NULL;
 
-	FILE* input = NULL;
-	FILE* output = NULL;
+    int** tableau_notes;
 
-	input = fopen(argv[1],"r");
-	if(input == NULL){
-		fprintf(stderr,"Le fichier que vous essayez d'ouvrir n'existe pas\n");
-		exit(-1);
-	}
+    output =  fopen("partition.ly","w");
+    if(output == NULL){
+        fprintf(stderr,"Le fichier partition.ly n'a pas reussi a etre cree\n");
+        exit(-1);
+    }
 
-	output =  fopen("partition.ly","w");
-	if(output == NULL){
-		fprintf(stderr,"Le fichier partition.ly n'a pas reussi a etre cree\n");
-		exit(-1);
-	}
-
-	init_ly(output);
+    init_ly(output);
+      
+    tableau_notes = lire_remplir(argv[1]);
 	
-	lire_ecrire(input, output);
-	
-	fprintf(output, "\n\\bar \"|.\"\n}");
-	fclose(input);
-	fclose(output);
+    fprintf(output, "\n\\bar \"|.\"\n}");
+    
+    fclose(output);
 
 }

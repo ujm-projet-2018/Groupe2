@@ -137,3 +137,51 @@ void decoupage_apres_barre (double temps, int metrique, char note, FILE* output)
         }
     }
 }
+
+int** lire_remplir(char* name) {
+    int i, j;
+
+    FILE* input = NULL;
+
+    int** tableau_notes;
+    
+    int nb_notes_total, temps, chiffrage;
+    int octave, alteration, duree, accord;
+    char note;
+    
+    input = fopen(name, "r");
+    if(input == NULL){
+        fprintf(stderr,"Le fichier que vous essayez d'ouvrir n'existe pas\n");
+        exit(-1);
+    }
+
+    fscanf(input, "%d\n", &nb_notes_total);
+    fscanf(input, "%d %d\n", &temps, &chiffrage);
+
+    tableau_notes = malloc(nb_notes_total * sizeof(int*));
+
+    for (i = 0; i < nb_notes_total; i++) {
+        tableau_notes[i] = malloc(sizeof(int) * 5);
+    }
+    
+    for (i = 0; i < nb_notes_total; i++) {
+        fscanf(input, "%c %d %d %d %d\n", &note, &octave, &alteration, &duree, &accord);
+        
+        tableau_notes[i][0] = note;
+        tableau_notes[i][1] = octave;
+        tableau_notes[i][2] = alteration;
+        tableau_notes[i][3] = duree;
+        tableau_notes[i][4] = accord;
+    }
+
+    for (i = 0; i < nb_notes_total; i++) {
+        for (j = 0; j < 5; j++) {
+            printf("%d ", tableau_notes[i][j]);
+        }
+        printf("\n");
+    }
+
+    fclose(input);
+    
+    return tableau_notes;
+}
