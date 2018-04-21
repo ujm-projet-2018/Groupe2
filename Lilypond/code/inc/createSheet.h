@@ -8,6 +8,7 @@
 int nb_notes_total;
 int temps;
 int chiffrage;
+char type_gamme;
 
 /*
 Fonction : void init_ly(FILE* f);
@@ -46,5 +47,33 @@ Fonction : void afficher_gamme_et_noms(char noms_tonalites[30][4],int notes_tona
 Affiche les tableaux construits par initialisation_tableau_gamme();
 */
 void afficher_gamme_et_noms(char noms_tonalites[30][4],int notes_tonalites[30][14]);
+
+/*
+Fonction : int* remplir_tab_chercher_gamme(int** tableau_notes);
+Rempli un tableau servant a deduire la gamme de la partition
+*/
+int* remplir_tab_chercher_gamme(int** tableau_notes);
+
+/*
+Fonction : int chercher_gamme_diese(int notes_tonalites[30][14],int* tab_chercher_gamme);
+Input :
+** notes_tonalites[30][14] : tableau contenant la contenance des differences gammes
+** tab_chercher_gamme : tableau des notes de la partitions dont on doit trouver la gamme
+
+Renvoie le numero de la gamme trouver par rapport a tab_chercher_gamme
+*/
+int chercher_gamme_diese(int notes_tonalites[30][14],int* tab_chercher_gamme);
+
+/*
+Fonction : int chercher_gamme_bemol(int notes_tonalites[30][14],int* tab_chercher_gamme);
+Input :
+** notes_tonalites[30][14] : tableau contenant la contenance des differences gammes
+** tab_chercher_gamme : tableau des notes de la partitions dont on doit trouver la gamme
+
+Renvoie le numero de la gamme trouver par rapport a tab_chercher_gamme
+*/
+int chercher_gamme_bemol(int notes_tonalites[30][14],int* tab_chercher_gamme);
+
+void reconnaissance_gamme(int** tableau_notes,FILE* output);
 
 #endif
