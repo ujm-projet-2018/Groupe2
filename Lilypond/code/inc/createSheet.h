@@ -32,7 +32,7 @@ void decoupage_avant_barre_accord (double temps, int metrique, int ligne, FILE* 
 void decoupage_apres_barre_accord (double temps, int metrique, int ligne, FILE* output, int accord, int** tableau_notes);
 int** lire_remplir(char* name);
 
-int ecrire_accord_lie(int ligne, FILE* output, int** tableau_notes, int nb_notes_total, int accord, int duree);
+int ecrire_accord_lie(int ligne, FILE* output, int** tableau_notes, int snb_notes_total, int accord, int duree);
 void ecrire_notes(int** tableau_notes, FILE* output, int nb_notes_total);
 
 /*
