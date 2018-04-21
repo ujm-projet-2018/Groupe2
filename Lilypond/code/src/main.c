@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include "../inc/createSheet.h"
 
-
-
 int main (int argc, char* argv[]) {
     FILE* output = NULL;
 
@@ -18,6 +16,8 @@ int main (int argc, char* argv[]) {
     init_ly(output);
       
     tableau_notes = lire_remplir(argv[1]);
+
+    ecrire(tableau_notes, output);
 	
     fprintf(output, "\n\\bar \"|.\"\n}");
     
