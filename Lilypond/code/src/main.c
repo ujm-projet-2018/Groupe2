@@ -5,8 +5,12 @@
 
 
 int main (int argc,char* argv[]){
-
-	FILE* input = NULL;
+	char noms_tonalites[30][4];
+	int notes_tonalites[30][14];
+	initialisation_tableau_gamme(noms_tonalites,notes_tonalites);
+	
+	afficher_gamme_et_noms(noms_tonalites,notes_tonalites);
+	/*FILE* input = NULL;
 	FILE* output = NULL;
 
 	input = fopen(argv[1],"r");
@@ -27,6 +31,6 @@ int main (int argc,char* argv[]){
 	
 	fprintf(output, "\n\\bar \"|.\"\n}");
 	fclose(input);
-	fclose(output);
+	fclose(output);*/
 
 }
