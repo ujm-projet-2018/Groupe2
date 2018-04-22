@@ -34,7 +34,6 @@ void decoupage_apres_barre_accord (double temps, int metrique, int ligne, FILE* 
 int** lire_remplir(char* name);
 
 int ecrire_accord_lie(int ligne, FILE* output, int** tableau_notes, int snb_notes_total, int accord, int duree);
-void ecrire_notes(int** tableau_notes, FILE* output, int nb_notes_total);
 
 /*
 Fonction : void initialisation_tableau_gamme();
@@ -79,5 +78,7 @@ void reconnaissance_gamme(int** tableau_notes,FILE* output);
 char* retourne_ecriture(int** tableau_notes,int i);
 
 void modification_tableau_note_bemol(int** tableau_notes,int indice_gamme,int notes_tonalites[30][14]);
+
+int ecrire_accord(int ligne, FILE* output, int** tableau_notes, int nb_notes_total, int accord, int duree);
 
 #endif

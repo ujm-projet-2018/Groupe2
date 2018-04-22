@@ -52,6 +52,8 @@ void ecrire(int** tableau_notes, FILE* output){
                 }
                 else {
                     // Découpe d'un accord
+                    decoupage_avant_barre_accord(temps_avant, chiffrage, i, output, tableau_notes[i][4], tableau_notes);
+                    decoupage_apres_barre_accord(temps_restant, chiffrage, i, output, tableau_notes[i][4], tableau_notes);
                 }
                 
                 temps_restant = fabs(temps_restant);
@@ -74,7 +76,8 @@ void ecrire(int** tableau_notes, FILE* output){
                 fprintf(output, "%s%d ", ecriture, duree);
             }
             else {
-                i = ecrire_accord_lie(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
+                i = ecrire_accord(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
+                //i = ecrire_accord_lie(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
             }
             //fprintf(output, "%c%d\n", note, duree);
             temps_restant = temps;
@@ -84,7 +87,8 @@ void ecrire(int** tableau_notes, FILE* output){
                 fprintf(output, "%s%d ", ecriture, duree);
             }
             else {
-                i = ecrire_accord_lie(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
+                i = ecrire_accord(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
+                //i = ecrire_accord_lie(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
             }
             //fprintf(output, "%c%d ", note, duree);
         } 
@@ -444,36 +448,9 @@ int ecrire_accord_lie(int ligne, FILE* output, int** tableau_notes, int nb_notes
     }
     fprintf(output, ">%d)\n", duree);
 
-    return i;
+    return i-1;
 }
 
-void ecrire_notes(int** tableau_notes, FILE* output, int nb_notes_total) {
-    int i, j;
-    char* ecriture;
-
-    for (i = 0; i < nb_notes_total; i++) {
-        ecriture = retourne_ecriture(tableau_notes,i);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
-      
-        if (tableau_notes[i][0] != 'r' && tableau_notes[i][4] != 0) {
-            fprintf(output, "<%s ", ecriture);
-
-            for (j = i+1; j < nb_notes_total; j++) {
-                if (tableau_notes[j][4] == tableau_notes[i][4]) {
-		    ecriture = retourne_ecriture(tableau_notes,j);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
-                    fprintf(output, "%s ", ecriture);
-                }
-                else {
-                    i = j;
-                    break;
-                }
-            }
-            fprintf(output, ">%d ", tableau_notes[i][3]);
-        }
-        else {
-            fprintf(output, "%s%d ", ecriture, tableau_notes[i][3]);
-        }
-    }
-}
 int* remplir_tab_chercher_gamme(int** tableau_notes){
 	int i=0 , alteration;
 	char note;
@@ -734,3 +711,24 @@ char* retourne_ecriture(int** tableau_notes,int i){
 
 }
 	
+int ecrire_accord (int ligne, FILE* output, int** tableau_notes, int nb_notes_total, int accord, int duree) {
+    int i;
+    char* ecriture;
+
+    ecriture = retourne_ecriture(tableau_notes,ligne);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+
+    fprintf(output, "<%s ", ecriture);
+    
+    for (i = ligne + 1; i < nb_notes_total; i++) {
+        if (tableau_notes[i][4] == accord) {
+	    ecriture = retourne_ecriture(tableau_notes,i);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+            fprintf(output, "%s ", ecriture);
+        }
+        else {
+            break;
+        }
+    }
+    fprintf(output, ">%d ", duree);
+
+    return i - 1;
+}
