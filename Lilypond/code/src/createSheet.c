@@ -3,8 +3,8 @@
 
 void init_ly(FILE* f){
     fprintf(f, "\\version \"2.18.2\" \n");
-    fprintf(f, "\\language \"english\"\n"); 
-    fprintf(f, "\\relative c'' {\n"); 
+    fprintf(f, "\\language \"english\"\n{\n"); 
+   // fprintf(f, "\\relative c ''{\n"); 
 }
 
 void ecrire(int** tableau_notes, FILE* output){
@@ -22,13 +22,14 @@ void ecrire(int** tableau_notes, FILE* output){
         tableau_notes[i][3] = duree;
         tableau_notes[i][4] = accord;*/
     temps_restant = temps;
-
+    clef_partition ='G';
+    gamme_note_precedente =3;
     for (i = 0; i < nb_notes_total; i++) {
         duree = tableau_notes[i][3];
         
         temps_restant -= (double)chiffrage/duree;   
  	ecriture = retourne_ecriture(tableau_notes,i);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
-      
+    
         if (temps_restant < 0) {
              if (fabs(temps_restant) == (double)chiffrage/(double)(duree*2)) {
                  if (tableau_notes[i][4] == 0) { fprintf(stderr,"%s",ecriture);
@@ -52,6 +53,8 @@ void ecrire(int** tableau_notes, FILE* output){
                 }
                 else {
                     // Découpe d'un accord
+                    decoupage_avant_barre_accord(temps_avant, chiffrage, i, output, tableau_notes[i][4], tableau_notes);
+                    decoupage_apres_barre_accord(temps_restant, chiffrage, i, output, tableau_notes[i][4], tableau_notes);
                 }
                 
                 temps_restant = fabs(temps_restant);
@@ -74,7 +77,8 @@ void ecrire(int** tableau_notes, FILE* output){
                 fprintf(output, "%s%d ", ecriture, duree);
             }
             else {
-                i = ecrire_accord_lie(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
+                i = ecrire_accord(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
+                //i = ecrire_accord_lie(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
             }
             //fprintf(output, "%c%d\n", note, duree);
             temps_restant = temps;
@@ -84,7 +88,8 @@ void ecrire(int** tableau_notes, FILE* output){
                 fprintf(output, "%s%d ", ecriture, duree);
             }
             else {
-                i = ecrire_accord_lie(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
+                i = ecrire_accord(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
+                //i = ecrire_accord_lie(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
             }
             //fprintf(output, "%c%d ", note, duree);
         } 
@@ -176,7 +181,7 @@ void initialisation_tableau_gamme(char noms_tonalites[30][4],int notes_tonalites
 	int bemol[14]={13,12,6,5,11,10,4,3,9,8,2,13,7,6};
 	int mineur_diese[7]={5,12,7,2,9,4,11};//Permet d'ajouter la sensible des gammes mineur harmonique
 	int mineur_bemol[7]={3,8,13,6,11,4,6};//Permet d'ajouter la sensible des gammes mineur harmonique
-	char noms_tonalites2[30][4]={"cM","am","gM","em","dM","bm","aM","fms","eM","cms","dM","gms","fMs","dms","cMs","ams","fM","dm","bMf","gm","eMf","cm","aMf","fm","dMf","bmf","gMf","emf","cMf","amf"};//Tableau contenant le nom des tonalités (pour savoir si elles sont en dièses ou en bémol le lien se fait avec le second tableau
+	char noms_tonalites2[30][4]={"cM","am","gM","em","dM","bm","aM","fms","eM","cms","bM","gms","fMs","dms","cMs","ams","fM","dm","bMf","gm","eMf","cm","aMf","fm","dMf","bmf","gMf","emf","cMf","amf"};//Tableau contenant le nom des tonalités (pour savoir si elles sont en dièses ou en bémol le lien se fait avec le second tableau
 	
 	int i,k,j=0;
 	int notes_tonalites2[30][14] = {{0,0,1,0,1,0,1,1,0,1,0,1,0,1},{1,0,1,0,1,0,1,1,0,0,1,1,0,1},{},{},{},{},{},{},{},{},{},{},{},{},{14,0,1,0,1,0,1,1,0,1,0,1,0,1},{},{},{},{},{},{},{},{},{},{},{},{},{},{} ,{}};// Une ligne du tableau type : indiceNomGamme nombreAltérations do do# re re# etc.... avec 0 si non présent, 1 si présent. (gamme majeur et gamme mineur naturelle)
@@ -229,7 +234,7 @@ void initialisation_tableau_gamme(char noms_tonalites[30][4],int notes_tonalites
 		}
 		j+=2;                             //permet de se deplacer dans le tableau des bemols et des dièses pour la modification suivante
 		k++;
-		fprintf(stderr,"i: %d k %d\n",i, k);
+		
 	}	
 	for(i=0;i<30;i++){
 		for(j=0;j<14;j++){
@@ -466,36 +471,9 @@ int ecrire_accord_lie(int ligne, FILE* output, int** tableau_notes, int nb_notes
     }
     fprintf(output, ">%d)\n", duree);
 
-    return i;
+    return i-1;
 }
 
-void ecrire_notes(int** tableau_notes, FILE* output, int nb_notes_total) {
-    int i, j;
-    char* ecriture;
-
-    for (i = 0; i < nb_notes_total; i++) {
-        ecriture = retourne_ecriture(tableau_notes,i);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
-      
-        if (tableau_notes[i][0] != 'r' && tableau_notes[i][4] != 0) {
-            fprintf(output, "<%s ", ecriture);
-
-            for (j = i+1; j < nb_notes_total; j++) {
-                if (tableau_notes[j][4] == tableau_notes[i][4]) {
-		    ecriture = retourne_ecriture(tableau_notes,j);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
-                    fprintf(output, "%s ", ecriture);
-                }
-                else {
-                    i = j;
-                    break;
-                }
-            }
-            fprintf(output, ">%d ", tableau_notes[i][3]);
-        }
-        else {
-            fprintf(output, "%s%d ", ecriture, tableau_notes[i][3]);
-        }
-    }
-}
 int* remplir_tab_chercher_gamme(int** tableau_notes){
 	int i=0 , alteration;
 	char note;
@@ -570,13 +548,11 @@ int* remplir_tab_chercher_gamme(int** tableau_notes){
 }
 
 int chercher_gamme(int notes_tonalites[30][14],int* tab_chercher_gamme){
-
-	int verif_diese[7]={7,2,9,4,11,6,13};//contient les indices des notes non altere a verifier par rapport a l'ordre des dieses a verifier
-	int non,indice_note,indice_note_A,j,i=0,k=0,indice_gamme=-2;
+	int non,j,i=0;
 	while(i<=29){
 		//On regarde si le nombre d'alteration est suffisant , sinon ne sert a rien de verifier si c'est la bonne
 			j=2;
-			non=0;fprintf(stderr,"deg %d\n",i);
+			non=0;
 			while(j<=13 && non != 1){//On verifie
 				
 				if((notes_tonalites[i][j] == 0 && tab_chercher_gamme[j]>=1)){
@@ -646,16 +622,16 @@ void reconnaissance_gamme(int** tableau_notes,FILE* output){
 
 	initialisation_tableau_gamme(noms_tonalites,notes_tonalites);//Creation des differentes gammes	
 
-	afficher_gamme_et_noms(noms_tonalites,notes_tonalites);
-	/*Affiche le tableau de la partition pour verification : */int i;
+	//afficher_gamme_et_noms(noms_tonalites,notes_tonalites);
+	/*Affiche le tableau de la partition pour verification : *//*int i;
 	for(i=0;i<14;i++){ fprintf(stderr,"%d ",tab_chercher_gamme[i]);}
-	fprintf(stderr,"\n");
+	fprintf(stderr,"\n");*/
 
         /*On cherche la gamme*/
 	indice_gamme = chercher_gamme(notes_tonalites,tab_chercher_gamme);
 	type_gamme ='s';//Variable globale servant pour plus tard pour ecrire les notes dans le fichier
 	if(indice_gamme <0){indice_gamme =0; type_gamme ='r';}
-	else if(indice_gamme >15){fprintf(stderr,"bemol verif\n");
+	else if(indice_gamme >15){
 		type_gamme ='f';
 		modification_tableau_note_bemol(tableau_notes,indice_gamme,notes_tonalites);
 	}else{
@@ -664,7 +640,7 @@ void reconnaissance_gamme(int** tableau_notes,FILE* output){
 	}
 	
 	
-	fprintf(stderr,"indice gamme %d\n",indice_gamme);
+	
 	
 	/*On ecrit dans le fichier le nom de la gamme*/
 	if(noms_tonalites[indice_gamme][2] == 'f' || noms_tonalites[indice_gamme][2] =='s'){
@@ -718,7 +694,7 @@ void modification_tableau_note_bemol(int** tableau_notes,int indice_gamme,int no
 				}
 			break;
 			case 'e':
-				if(notes_tonalites[indice_gamme][6]==1){
+				if(notes_tonalites[indice_gamme][6]==1 && indice_gamme != 23){
 					tableau_notes[i][0]='f';
 				}
 			break;
@@ -728,22 +704,50 @@ void modification_tableau_note_bemol(int** tableau_notes,int indice_gamme,int no
 	
 }
 char* retourne_ecriture(int** tableau_notes,int i){
-	char* ecriture = malloc(5 * sizeof(char));
+	char* ecriture = malloc(8 * sizeof(char));
+	int nbr_alt = tableau_notes[i][2],nbr_gamme=tableau_notes[i][1];
+	int j=1;
+	
 	ecriture[0]=tableau_notes[i][0];
-	if(tableau_notes[i][2] == 1) {	
+	
+	while(nbr_alt>= 1) {	
 		if(type_gamme == 'r'){
-			ecriture[1] = 's';
+			ecriture[j] = 's';
+			nbr_alt--;
 		}
 		else{
-			ecriture[1] = type_gamme;
+			ecriture[j] = type_gamme;	
+			nbr_alt--;
    		}
+		j++;
+	}
 
+	
+		if(clef_partition == 'G'){
+			if(nbr_gamme<2){
+				while(nbr_gamme!=2){
+					ecriture[j]=',';
+					nbr_gamme++;
+					j++;
+				}
+			}
+			else{
+				while(nbr_gamme!=2){
+					ecriture[j]='\'';
+					nbr_gamme--;
+					j++;
+				}
 
-		ecriture[2] ='\0';
-	}      
-	else{
-		ecriture[1]='\0';
-	} 
+			}
+		
+
+		}
+		else if(clef_partition == 'F'){
+
+		}
+	
+		ecriture[j] ='\0';
+	
 	return ecriture;
 
 }
@@ -768,23 +772,23 @@ void modification_tableau_note_diese(int** tableau_notes,int indice_gamme,int no
 				case 'd':
 					if(notes_tonalites[indice_gamme][4]==1 && indice_gamme==13){
 						tableau_notes[i][0]='c';
-						tableau_notes[i][2]=2;
+						tableau_notes[i][2]=2;fprintf(stderr,"ici cahnge diese\n");
 					}
 				break;
 				case 'a':
-					if(notes_tonalites[indice_gamme][11]==1 && indice_gamme==15){
+					if(notes_tonalites[indice_gamme][11]==1 && indice_gamme==15 && alteration == 0){
 						tableau_notes[i][0]='g';
 						tableau_notes[i][2]=2;
 					}
 				break;
 				case 'f':
-					if(notes_tonalites[indice_gamme][7]==1 && notes_tonalites[indice_gamme][1] >= 6){
+					if(notes_tonalites[indice_gamme][7]==1 && notes_tonalites[indice_gamme][1] >= 6 && alteration == 0){
 						tableau_notes[i][0]='e';
 						tableau_notes[i][2]=1;
 					}
 				break;
 				case 'c':
-					if(notes_tonalites[indice_gamme][2]==1 && notes_tonalites[indice_gamme][1] == 7){
+					if(notes_tonalites[indice_gamme][2]==1 && notes_tonalites[indice_gamme][1] == 7 && alteration == 0){
 						tableau_notes[i][0]='b';
 						tableau_notes[i][2]=1;
 					}
@@ -796,3 +800,24 @@ void modification_tableau_note_diese(int** tableau_notes,int indice_gamme,int no
 }
 
 	
+int ecrire_accord (int ligne, FILE* output, int** tableau_notes, int nb_notes_total, int accord, int duree) {
+    int i;
+    char* ecriture;
+
+    ecriture = retourne_ecriture(tableau_notes,ligne);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+
+    fprintf(output, "<%s ", ecriture);
+    
+    for (i = ligne + 1; i < nb_notes_total; i++) {
+        if (tableau_notes[i][4] == accord) {
+	    ecriture = retourne_ecriture(tableau_notes,i);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+            fprintf(output, "%s ", ecriture);
+        }
+        else {
+            break;
+        }
+    }
+    fprintf(output, ">%d ", duree);
+
+    return i - 1;
+}

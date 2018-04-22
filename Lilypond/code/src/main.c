@@ -5,7 +5,6 @@
 
 
 int main (int argc,char* argv[]){
-	FILE* input = NULL;
 	FILE* output = NULL;
 
 	int** tableau_notes;
@@ -23,8 +22,6 @@ int main (int argc,char* argv[]){
 	 reconnaissance_gamme(tableau_notes,output);
    	 ecrire(tableau_notes, output);
 	 fprintf(output, "\n\\bar \"|.\"\n}");
-	// fclose(input);
+         
        	 fclose(output);
- 
-
 }
