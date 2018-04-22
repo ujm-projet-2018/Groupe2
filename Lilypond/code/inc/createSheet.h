@@ -26,8 +26,8 @@ void lire_ecrire(FILE* input, FILE* output);
 */
 void ecrire(int** tableau_notes, FILE* output);
 
-void decoupage_avant_barre(double temps, int metrique, int note, FILE* output);
-void decoupage_apres_barre(double temps, int metrique, int note, FILE* output);
+void decoupage_avant_barre(double temps, int metrique, char* ecriture, FILE* output);
+void decoupage_apres_barre(double temps, int metrique, char* ecriture, FILE* output);
 
 void decoupage_avant_barre_accord (double temps, int metrique, int ligne, FILE* output, int accord, int** tableau_notes);
 void decoupage_apres_barre_accord (double temps, int metrique, int ligne, FILE* output, int accord, int** tableau_notes);
@@ -75,5 +75,9 @@ Renvoie le numero de la gamme trouver par rapport a tab_chercher_gamme
 int chercher_gamme_bemol(int notes_tonalites[30][14],int* tab_chercher_gamme);
 
 void reconnaissance_gamme(int** tableau_notes,FILE* output);
+
+char* retourne_ecriture(int** tableau_notes,int i);
+
+void modification_tableau_note_bemol(int** tableau_notes,int indice_gamme,int notes_tonalites[30][14]);
 
 #endif

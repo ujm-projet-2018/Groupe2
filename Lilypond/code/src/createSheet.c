@@ -14,18 +14,25 @@ void ecrire(int** tableau_notes, FILE* output){
     
     double temps_restant;
     double temps_avant;
-        
+    char* ecriture;
+        /*
+	tableau_notes[i][0] = note;
+        tableau_notes[i][1] = octave;
+        tableau_notes[i][2] = alteration;
+        tableau_notes[i][3] = duree;
+        tableau_notes[i][4] = accord;*/
     temps_restant = temps;
 
     for (i = 0; i < nb_notes_total; i++) {
         duree = tableau_notes[i][3];
         
-        temps_restant -= (double)chiffrage/duree;                
-        
+        temps_restant -= (double)chiffrage/duree;   
+ 	ecriture = retourne_ecriture(tableau_notes,i);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+      
         if (temps_restant < 0) {
              if (fabs(temps_restant) == (double)chiffrage/(double)(duree*2)) {
-                 if (tableau_notes[i][4] == 0) {
-                     fprintf(output, "%c%d( %c%d)\n", tableau_notes[i][0], duree*2, tableau_notes[i][0], duree*2);
+                 if (tableau_notes[i][4] == 0) { fprintf(stderr,"%s",ecriture);
+                     fprintf(output, "%s%d( %s%d)\n", ecriture, duree*2, ecriture, duree*2);
                  }
                  else {
                      i = ecrire_accord_lie(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree*2);
@@ -40,8 +47,8 @@ void ecrire(int** tableau_notes, FILE* output){
                 temps_avant = (double)chiffrage/duree + temps_restant;
                 
                 if (tableau_notes[i][4] == 0) {
-                    decoupage_avant_barre(temps_avant, chiffrage, tableau_notes[i][0], output);
-                    decoupage_apres_barre(temps_restant, chiffrage, tableau_notes[i][0], output);
+                    decoupage_avant_barre(temps_avant, chiffrage, ecriture, output);
+                    decoupage_apres_barre(temps_restant, chiffrage, ecriture, output);
                 }
                 else {
                     // Découpe d'un accord
@@ -64,7 +71,7 @@ void ecrire(int** tableau_notes, FILE* output){
         }
         else if (temps_restant == 0) {
             if (tableau_notes[i][4] == 0) {
-                fprintf(output, "%c%d ", tableau_notes[i][0], duree);
+                fprintf(output, "%s%d ", ecriture, duree);
             }
             else {
                 i = ecrire_accord_lie(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
@@ -74,7 +81,7 @@ void ecrire(int** tableau_notes, FILE* output){
         }
         else if (temps_restant > 0) {
             if (tableau_notes[i][4] == 0) {
-                fprintf(output, "%c%d ", tableau_notes[i][0], duree);
+                fprintf(output, "%s%d ", ecriture, duree);
             }
             else {
                 i = ecrire_accord_lie(i, output, tableau_notes, nb_notes_total, tableau_notes[i][4], duree);
@@ -84,7 +91,7 @@ void ecrire(int** tableau_notes, FILE* output){
     }
 }
 
-void decoupage_avant_barre (double temps, int metrique, int note, FILE* output) {
+void decoupage_avant_barre (double temps, int metrique, char* ecriture, FILE* output) {
     int i = 0;
 
     double temps_point_note_courante;
@@ -95,7 +102,7 @@ void decoupage_avant_barre (double temps, int metrique, int note, FILE* output) 
         temps_note_courante = metrique/pow(2, i);
         
         if (temps_note_courante == temps_avb) {
-            fprintf(output, "%c%d( ",note, (int)pow(2, i));
+            fprintf(output, "%s%d( ",ecriture, (int)pow(2, i));
             break;
         }
         else if (temps_note_courante > temps_avb) {
@@ -107,19 +114,19 @@ void decoupage_avant_barre (double temps, int metrique, int note, FILE* output) 
             
             if (temps_point_note_courante == temps_avb) {
                 temps_avb -= temps_point_note_courante;
-                fprintf(output, "%c%d.( ", note, (int)pow(2, i));
+                fprintf(output, "%s%d.( ", ecriture, (int)pow(2, i));
                 break;
             }
             else if (temps_point_note_courante < temps_avb) {
                 temps_avb -= temps_point_note_courante;
-                fprintf(output, "%c%d.( ", note, (int)pow(2, i));
-                decoupage_apres_barre(temps_avb, metrique, note, output);
+                fprintf(output, "%s%d.( ", ecriture, (int)pow(2, i));
+                decoupage_apres_barre(temps_avb, metrique, ecriture, output);
             }
         }
     }
 }
 
-void decoupage_apres_barre (double temps, int metrique, int note, FILE* output) {
+void decoupage_apres_barre (double temps, int metrique, char* ecriture, FILE* output) {
     int i = 0;
 
     double temps_point_note_courante;
@@ -130,14 +137,14 @@ void decoupage_apres_barre (double temps, int metrique, int note, FILE* output) 
         temps_note_courante = metrique/pow(2, i);
 
         if (temps_note_courante == temps_apb) {
-            fprintf(output, "%c%d) ",note, (int)pow(2, i));
+            fprintf(output, "%s%d) ",ecriture, (int)pow(2, i));
             break;
         }
         else if (temps_note_courante > temps_apb) {
             i++;
         }
         else {
-            fprintf(output, "%c%d", note, (int)pow(2, i));
+            fprintf(output, "%s%d", ecriture, (int)pow(2, i));
             temps_point_note_courante = temps_note_courante/2.0;
             temps_apb -= temps_note_courante;
             
@@ -149,7 +156,7 @@ void decoupage_apres_barre (double temps, int metrique, int note, FILE* output) 
             else if (temps_point_note_courante < temps_apb) {
                 temps_apb -= temps_point_note_courante;
                 fprintf(output, ".) (");
-                decoupage_apres_barre(temps_apb, metrique, note, output);
+                decoupage_apres_barre(temps_apb, metrique, ecriture, output);
             }
         }
     }
@@ -235,16 +242,19 @@ void decoupage_avant_barre_accord (double temps, int metrique, int ligne, FILE* 
     double temps_point_note_courante;
     double temps_note_courante;
     double temps_avb = temps;
+    char* ecriture;
  
     while (temps_avb != 0 && i < 6) {
         temps_note_courante = metrique/pow(2, i);
         
         if (temps_note_courante == temps_avb) {
-            fprintf(output, "<%c ", tableau_notes[ligne][0]);
+	    ecriture = retourne_ecriture(tableau_notes,ligne);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+            fprintf(output, "<%s ", ecriture);
     
             for (j = ligne + 1; j < nb_notes_total; j++) {
                 if (tableau_notes[j][4] == accord) {
-                    fprintf(output, "%c ", tableau_notes[j][0]);
+		    ecriture = retourne_ecriture(tableau_notes,j);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+                    fprintf(output, "%s ", ecriture);
                 }
                 else {
                     break;
@@ -263,11 +273,13 @@ void decoupage_avant_barre_accord (double temps, int metrique, int ligne, FILE* 
             
             if (temps_point_note_courante == temps_avb) {
                 temps_avb -= temps_point_note_courante;
-                fprintf(output, "<%c ", tableau_notes[ligne][0]);
+		ecriture = retourne_ecriture(tableau_notes,ligne);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+                fprintf(output, "<%s ", ecriture);
     
                 for (j = ligne + 1; j < nb_notes_total; j++) {
                     if (tableau_notes[j][4] == accord) {
-                        fprintf(output, "%c ", tableau_notes[j][0]);
+			ecriture = retourne_ecriture(tableau_notes,j);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+                        fprintf(output, "%s ", ecriture);
                     }
                     else {
                         break;
@@ -279,11 +291,13 @@ void decoupage_avant_barre_accord (double temps, int metrique, int ligne, FILE* 
             }
             else if (temps_point_note_courante < temps_avb) {
                 temps_avb -= temps_point_note_courante;
-                fprintf(output, "<%c ", tableau_notes[ligne][0]);
+		ecriture = retourne_ecriture(tableau_notes,ligne);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+                fprintf(output, "<%s ", ecriture);
     
                 for (j = ligne + 1; j < nb_notes_total; j++) {
                     if (tableau_notes[j][4] == accord) {
-                        fprintf(output, "%c ", tableau_notes[j][0]);
+			ecriture = retourne_ecriture(tableau_notes,j);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+                        fprintf(output, "%s ", ecriture);
                     }
                     else {
                         break;
@@ -304,16 +318,18 @@ void decoupage_apres_barre_accord (double temps, int metrique, int ligne, FILE* 
     double temps_point_note_courante;
     double temps_note_courante;
     double temps_apb = fabs(temps);
+    char* ecriture;
 
     while (temps_apb != 0 && i < 6) {
         temps_note_courante = metrique/pow(2, i);
-
+	ecriture = retourne_ecriture(tableau_notes,ligne);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
         if (temps_note_courante == temps_apb) {
-            fprintf(output, "<%c ", tableau_notes[ligne][0]);
+            fprintf(output, "<%s ", ecriture);
     
             for (j = ligne + 1; j < nb_notes_total; j++) {
                 if (tableau_notes[j][4] == accord) {
-                    fprintf(output, "%c ", tableau_notes[j][0]);
+		    ecriture = retourne_ecriture(tableau_notes,j);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+                    fprintf(output, "%s ", ecriture);
                 }
                 else {
                     break;
@@ -326,11 +342,12 @@ void decoupage_apres_barre_accord (double temps, int metrique, int ligne, FILE* 
             i++;
         }
         else {
-            fprintf(output, "<%c ", tableau_notes[ligne][0]);
+            fprintf(output, "<%s ", ecriture);
             
             for (j = ligne + 1; j < nb_notes_total; j++) {
                 if (tableau_notes[j][4] == accord) {
-                    fprintf(output, "%c ", tableau_notes[j][0]);
+		    ecriture = retourne_ecriture(tableau_notes,j);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+                    fprintf(output, "%s ", ecriture);
                 }
                 else {
                     break;
@@ -397,12 +414,15 @@ int** lire_remplir(char* name) {
 
 int ecrire_accord_lie(int ligne, FILE* output, int** tableau_notes, int nb_notes_total, int accord, int duree) {
     int i;
-    
-    fprintf(output, "<%c ", tableau_notes[ligne][0]);
+    char* ecriture ;
+    ecriture = retourne_ecriture(tableau_notes,ligne);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+      
+    fprintf(output, "<%s ", ecriture);
     
     for (i = ligne + 1; i < nb_notes_total; i++) {
         if (tableau_notes[i][4] == accord) {
-            fprintf(output, "%c ", tableau_notes[i][0]);
+	    ecriture = retourne_ecriture(tableau_notes,i);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+            fprintf(output, "%s ", ecriture);
         }
         else {
             break;
@@ -410,11 +430,13 @@ int ecrire_accord_lie(int ligne, FILE* output, int** tableau_notes, int nb_notes
     }
     fprintf(output, ">%d (", duree);
 
-    fprintf(output, "<%c ", tableau_notes[ligne][0]);
+    ecriture = retourne_ecriture(tableau_notes,ligne);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+    fprintf(output, "<%s ", ecriture);
     
     for (i = ligne + 1; i < nb_notes_total; i++) {
         if (tableau_notes[i][4] == accord) {
-            fprintf(output, "%c ", tableau_notes[i][0]);
+	    ecriture = retourne_ecriture(tableau_notes,i);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+            fprintf(output, "%s ", ecriture);
         }
         else {
             break;
@@ -427,14 +449,18 @@ int ecrire_accord_lie(int ligne, FILE* output, int** tableau_notes, int nb_notes
 
 void ecrire_notes(int** tableau_notes, FILE* output, int nb_notes_total) {
     int i, j;
+    char* ecriture;
 
     for (i = 0; i < nb_notes_total; i++) {
+        ecriture = retourne_ecriture(tableau_notes,i);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+      
         if (tableau_notes[i][0] != 'r' && tableau_notes[i][4] != 0) {
-            fprintf(output, "<%c ", tableau_notes[i][0]);
+            fprintf(output, "<%s ", ecriture);
 
             for (j = i+1; j < nb_notes_total; j++) {
                 if (tableau_notes[j][4] == tableau_notes[i][4]) {
-                    fprintf(output, "%c ", tableau_notes[j][0]);
+		    ecriture = retourne_ecriture(tableau_notes,j);//contient la note ainsi que son alteration si il y en a une (//TODO ajouter la hauteur))
+                    fprintf(output, "%s ", ecriture);
                 }
                 else {
                     i = j;
@@ -444,7 +470,7 @@ void ecrire_notes(int** tableau_notes, FILE* output, int nb_notes_total) {
             fprintf(output, ">%d ", tableau_notes[i][3]);
         }
         else {
-            fprintf(output, "%c%d ", tableau_notes[i][0], tableau_notes[i][3]);
+            fprintf(output, "%s%d ", ecriture, tableau_notes[i][3]);
         }
     }
 }
@@ -609,9 +635,10 @@ void reconnaissance_gamme(int** tableau_notes,FILE* output){
 
 	initialisation_tableau_gamme(noms_tonalites,notes_tonalites);//Creation des differentes gammes	
 
-	//afficher_gamme_et_noms(noms_tonalites,notes_tonalites);
-	/*Affiche le tableau de la partition pour verification : for(i=0;i<14;i++){ fprintf(stderr,"%d ",tab_chercher_gamme[i]);}
-	fprintf(stderr,"\n");*/
+	afficher_gamme_et_noms(noms_tonalites,notes_tonalites);
+	/*Affiche le tableau de la partition pour verification : */int i;
+	for(i=0;i<14;i++){ fprintf(stderr,"%d ",tab_chercher_gamme[i]);}
+	fprintf(stderr,"\n");
 
         /*On cherche la gamme*/
 	indice_gamme = chercher_gamme_diese(notes_tonalites,tab_chercher_gamme);
@@ -619,11 +646,13 @@ void reconnaissance_gamme(int** tableau_notes,FILE* output){
 
 	if(indice_gamme == -1){
 		indice_gamme = chercher_gamme_bemol(notes_tonalites,tab_chercher_gamme);
-		type_gamme ='f';	
+		type_gamme ='f';
+		if(indice_gamme == -1) {indice_gamme =0; type_gamme ='r';}
+		else{ modification_tableau_note_bemol(tableau_notes,indice_gamme,notes_tonalites);}	
 	}
-	if(indice_gamme == -1) {indice_gamme =0; type_gamme ='r';}
 	
-	//fprintf(stderr,"indice gamme %d\n",indice_gamme);
+	
+	fprintf(stderr,"indice gamme %d\n",indice_gamme);
 	
 	/*On ecrit dans le fichier le nom de la gamme*/
 	if(noms_tonalites[indice_gamme][2] == 'f' || noms_tonalites[indice_gamme][2] =='s'){
@@ -638,4 +667,70 @@ void reconnaissance_gamme(int** tableau_notes,FILE* output){
 	
 }
 
+void modification_tableau_note_bemol(int** tableau_notes,int indice_gamme,int notes_tonalites[30][14]){
+	
+	int i=0,alteration;
+	char note;
+	for(i=0;i<nb_notes_total;i++){
+		note = tableau_notes[i][0];
+		alteration = tableau_notes[i][2];
+		switch(note){
+			case 'a':
+				if(notes_tonalites[indice_gamme][12]==1 && alteration == 1){
+					tableau_notes[i][0]='b';
+				}
+			break;
+			case 'd':
+				if(notes_tonalites[indice_gamme][5]==1 && alteration == 1){
+					tableau_notes[i][0]='e';
+				}
+			break;
+			case 'g':
+				if(notes_tonalites[indice_gamme][10]==1 && alteration == 1){
+					tableau_notes[i][0]='a';
+				}
+			break;
+			case 'c':
+				if(notes_tonalites[indice_gamme][3]==1 && alteration == 1){
+					tableau_notes[i][0]='d';
+				}
+			break;
+			case 'f':
+				if(notes_tonalites[indice_gamme][8]==1 && alteration == 1){
+					tableau_notes[i][0]='g';
+				}
+			break;
+			case 'b':
+				if(notes_tonalites[indice_gamme][13]==1){
+					tableau_notes[i][0]='c';
+				}
+			break;
+			case 'e':
+				if(notes_tonalites[indice_gamme][6]==1){
+					tableau_notes[i][0]='f';
+				}
+			break;
+
+		}
+	}
+	
+}
+char* retourne_ecriture(int** tableau_notes,int i){
+	char* ecriture = malloc(5 * sizeof(char));
+	ecriture[0]=tableau_notes[i][0];
+	if(tableau_notes[i][2] == 1) {	
+		if(type_gamme == 'r'){
+			ecriture[1] = 's';
+		}
+		else{
+			ecriture[1] = type_gamme;
+   		}
+		ecriture[2] ='\0';
+	}      
+	else{
+		ecriture[1]='\0';
+	} 
+	return ecriture;
+
+}
 	
