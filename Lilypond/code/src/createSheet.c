@@ -174,10 +174,12 @@ void copie_tableau_notes_tonalites(int tab1[30][14],int indice1,int indice2 ,int
 void initialisation_tableau_gamme(char noms_tonalites[30][4],int notes_tonalites[30][14]){
 	int diese[14]={7,8,2,3,9,10,4,5,11,12,6,7,13,2};//
 	int bemol[14]={13,12,6,5,11,10,4,3,9,8,2,13,7,6};
+	int mineur_diese[7]={5,12,7,2,9,4,11};//Permet d'ajouter la sensible des gammes mineur harmonique
+	int mineur_bemol[7]={3,8,13,6,11,4,6};//Permet d'ajouter la sensible des gammes mineur harmonique
 	char noms_tonalites2[30][4]={"cM","am","gM","em","dM","bm","aM","fms","eM","cms","dM","gms","fMs","dms","cMs","ams","fM","dm","bMf","gm","eMf","cm","aMf","fm","dMf","bmf","gMf","emf","cMf","amf"};//Tableau contenant le nom des tonalités (pour savoir si elles sont en dièses ou en bémol le lien se fait avec le second tableau
 	
-	int i,j=0;
-	int notes_tonalites2[30][14] = {{0,0,1,0,1,0,1,1,0,1,0,1,0,1},{1,0,1,0,1,0,1,1,0,1,0,1,0,1},{},{},{},{},{},{},{},{},{},{},{},{},{14,0,1,0,1,0,1,1,0,1,0,1,0,1},{},{},{},{},{},{},{},{},{},{},{},{},{},{} ,{}};// Une ligne du tableau type : indiceNomGamme nombreAltérations do do# re re# etc.... avec 0 si non présent, 1 si présent. (gamme majeur et gamme mineur naturelle)
+	int i,k,j=0;
+	int notes_tonalites2[30][14] = {{0,0,1,0,1,0,1,1,0,1,0,1,0,1},{1,0,1,0,1,0,1,1,0,0,1,1,0,1},{},{},{},{},{},{},{},{},{},{},{},{},{14,0,1,0,1,0,1,1,0,1,0,1,0,1},{},{},{},{},{},{},{},{},{},{},{},{},{},{} ,{}};// Une ligne du tableau type : indiceNomGamme nombreAltérations do do# re re# etc.... avec 0 si non présent, 1 si présent. (gamme majeur et gamme mineur naturelle)
 	   // on se sert de ces gammes pour construire les autres
 
 	for(i=0;i<30;i++){                        // on copie la tableau local a celui passe en parametre
@@ -185,7 +187,7 @@ void initialisation_tableau_gamme(char noms_tonalites[30][4],int notes_tonalites
 			noms_tonalites[i][j] = noms_tonalites2[i][j];
 		}
 	}
-	j=0;
+	j=0;k=0;
 	for(i=2;i<=14;i+=2){
 
 		/*Gammes avec des dieses*/
@@ -197,6 +199,14 @@ void initialisation_tableau_gamme(char noms_tonalites[30][4],int notes_tonalites
 	
 		copie_tableau_notes_tonalites(notes_tonalites2,i+1,i,14);
 		notes_tonalites2[i+1][0]+=1;       // on augmente pour donner le nom de la relatif mineur
+		if(mineur_diese[k]==2){
+			notes_tonalites2[i+1][mineur_diese[k]]+=1;//On ajoute la sensible
+			notes_tonalites2[i+1][13]+=0;//On ajoute la sensible
+		}
+		else{
+			notes_tonalites2[i+1][mineur_diese[k]]+=1;//On ajoute la sensible
+			notes_tonalites2[i+1][mineur_diese[k]-1]+=0;//On ajoute la sensible
+		}
 
 		/*Gammes avec des bemols*/
 		copie_tableau_notes_tonalites(notes_tonalites2,i+14,i+12,14);
@@ -206,8 +216,20 @@ void initialisation_tableau_gamme(char noms_tonalites[30][4],int notes_tonalites
 		notes_tonalites2[i+14][bemol[j+1]] = 1;
 
 		copie_tableau_notes_tonalites(notes_tonalites2,i+15,i+14,14);
-		notes_tonalites2[i+15][0]+=1;
+
+		notes_tonalites2[i+15][0]+=1;  // on augmente pour donner le nom de la relatif mineur
+
+		if(mineur_bemol[k]==13){
+			notes_tonalites2[i+15][mineur_bemol[k]]+=1;//On ajoute la sensible
+			notes_tonalites2[i+15][mineur_bemol[2]]+=0;
+		}
+		else{
+			notes_tonalites2[i+15][mineur_bemol[k]]+=1;//On ajoute la sensible
+			notes_tonalites2[i+15][mineur_bemol[k]-1]+=0;
+		}
 		j+=2;                             //permet de se deplacer dans le tableau des bemols et des dièses pour la modification suivante
+		k++;
+		fprintf(stderr,"i: %d k %d\n",i, k);
 	}	
 	for(i=0;i<30;i++){
 		for(j=0;j<14;j++){
@@ -547,25 +569,17 @@ int* remplir_tab_chercher_gamme(int** tableau_notes){
 	return tab_chercher_gamme;
 }
 
-int chercher_gamme_diese(int notes_tonalites[30][14],int* tab_chercher_gamme){
+int chercher_gamme(int notes_tonalites[30][14],int* tab_chercher_gamme){
 
 	int verif_diese[7]={7,2,9,4,11,6,13};//contient les indices des notes non altere a verifier par rapport a l'ordre des dieses a verifier
-	int non,indice_note,indice_note_A,j,i=0;
-	while(i<=15){
-		if(notes_tonalites[i][1]>=tab_chercher_gamme[1]){//On regarde si le nombre d'alteration est suffisant , sinon ne sert a rien de verifier si c'est la bonne
-			j=0;
-			non=0;
-			while(j<7 && non != 1){//On verifie
-				indice_note = verif_diese[j];// note non altere
-				indice_note_A = verif_diese[j]+1; // note altere
-				if(indice_note_A >= 13) indice_note_A = 2;//Si on sort des bornes
-
-/*On regarde la presence de la note non altere et sa correspondante altere, si elle y sont en meme temps on n'est pas dans la gamme (sauf exception) OU si il y a la note non altere dans la gamme de reference, mais que celle de la partition est altere incompatibilite OU si il n'y a pas une note dans la gamme de reference , mais dans la partition il y a presence*/
-
-				if(((notes_tonalites[i][indice_note] == 1 && tab_chercher_gamme[indice_note_A]>0)&& i<12)
-				  ||(notes_tonalites[i][indice_note_A] ==0 && tab_chercher_gamme[indice_note_A] == 1)
-				  ||(notes_tonalites[i][indice_note] ==0 && tab_chercher_gamme[indice_note] > 0)){
-
+	int non,indice_note,indice_note_A,j,i=0,k=0,indice_gamme=-2;
+	while(i<=29){
+		//On regarde si le nombre d'alteration est suffisant , sinon ne sert a rien de verifier si c'est la bonne
+			j=2;
+			non=0;fprintf(stderr,"deg %d\n",i);
+			while(j<=13 && non != 1){//On verifie
+				
+				if((notes_tonalites[i][j] == 0 && tab_chercher_gamme[j]>=1)){
 					non=1;
 					i++;
 				}
@@ -573,18 +587,15 @@ int chercher_gamme_diese(int notes_tonalites[30][14],int* tab_chercher_gamme){
 					j++;
 				}
 			}
-			if(j==7 && non !=1){//Si on a passer toutes les notes de la gamme de reference sans rencontrer d'erreur
-				return notes_tonalites[i][0]; // on retourne l'indice de nom de la gamme si trouver
+			if(j==14 && non !=1){//Si on a passer toutes les notes de la gamme de reference sans rencontrer d'erreur
+				return	notes_tonalites[i][0];
+				
 			}
-		}
-		else{
-			i++;
-		}
+			
 
 	}
 	return -1; //Quand aucune gamme avec une armure contenant des dieses n'a ete trouve
 }
-
 
 int chercher_gamme_bemol(int notes_tonalites[30][14],int* tab_chercher_gamme){
 	
@@ -592,7 +603,7 @@ int chercher_gamme_bemol(int notes_tonalites[30][14],int* tab_chercher_gamme){
 	int non,indice_note,indice_note_A,j,i=16;
 
 	while(i<=29){
-		if(notes_tonalites[i][1]>=tab_chercher_gamme[1]){//On regarde si le nombre d'alteration est suffisant , sinon ne sert a rien de verifier si c'est la bonne
+		if(notes_tonalites[i][1]>=tab_chercher_gamme[1]-1){//On regarde si le nombre d'alteration est suffisant , sinon ne sert a rien de verifier si c'est la bonne
 			j=0;
 			non=0;
 			while(j<7 && non != 1){//On verifie
@@ -641,14 +652,15 @@ void reconnaissance_gamme(int** tableau_notes,FILE* output){
 	fprintf(stderr,"\n");
 
         /*On cherche la gamme*/
-	indice_gamme = chercher_gamme_diese(notes_tonalites,tab_chercher_gamme);
+	indice_gamme = chercher_gamme(notes_tonalites,tab_chercher_gamme);
 	type_gamme ='s';//Variable globale servant pour plus tard pour ecrire les notes dans le fichier
-
-	if(indice_gamme == -1){
-		indice_gamme = chercher_gamme_bemol(notes_tonalites,tab_chercher_gamme);
+	if(indice_gamme <0){indice_gamme =0; type_gamme ='r';}
+	else if(indice_gamme >15){fprintf(stderr,"bemol verif\n");
 		type_gamme ='f';
-		if(indice_gamme == -1) {indice_gamme =0; type_gamme ='r';}
-		else{ modification_tableau_note_bemol(tableau_notes,indice_gamme,notes_tonalites);}	
+		modification_tableau_note_bemol(tableau_notes,indice_gamme,notes_tonalites);
+	}else{
+		modification_tableau_note_diese(tableau_notes,indice_gamme,notes_tonalites);
+
 	}
 	
 	
@@ -701,7 +713,7 @@ void modification_tableau_note_bemol(int** tableau_notes,int indice_gamme,int no
 				}
 			break;
 			case 'b':
-				if(notes_tonalites[indice_gamme][13]==1){
+				if(notes_tonalites[indice_gamme][13]==0 ){
 					tableau_notes[i][0]='c';
 				}
 			break;
@@ -725,6 +737,8 @@ char* retourne_ecriture(int** tableau_notes,int i){
 		else{
 			ecriture[1] = type_gamme;
    		}
+
+
 		ecriture[2] ='\0';
 	}      
 	else{
@@ -733,4 +747,52 @@ char* retourne_ecriture(int** tableau_notes,int i){
 	return ecriture;
 
 }
+
+void modification_tableau_note_diese(int** tableau_notes,int indice_gamme,int notes_tonalites[30][14]){
+
+	int i=0,alteration;
+	char note;
+	if(notes_tonalites[indice_gamme][1]>=5){
+		for(i=0;i<nb_notes_total;i++){
+			note = tableau_notes[i][0];
+			alteration = tableau_notes[i][2];
+
+			switch(note){
+				case 'g':
+					if(notes_tonalites[indice_gamme][9]==1 && indice_gamme==11){
+						tableau_notes[i][0]='f';
+						tableau_notes[i][2]=2;
+					}
+					
+				break;
+				case 'd':
+					if(notes_tonalites[indice_gamme][4]==1 && indice_gamme==13){
+						tableau_notes[i][0]='c';
+						tableau_notes[i][2]=2;
+					}
+				break;
+				case 'a':
+					if(notes_tonalites[indice_gamme][11]==1 && indice_gamme==15){
+						tableau_notes[i][0]='g';
+						tableau_notes[i][2]=2;
+					}
+				break;
+				case 'f':
+					if(notes_tonalites[indice_gamme][7]==1 && notes_tonalites[indice_gamme][1] >= 6){
+						tableau_notes[i][0]='e';
+						tableau_notes[i][2]=1;
+					}
+				break;
+				case 'c':
+					if(notes_tonalites[indice_gamme][2]==1 && notes_tonalites[indice_gamme][1] == 7){
+						tableau_notes[i][0]='b';
+						tableau_notes[i][2]=1;
+					}
+				break;
+			}
+		}
+	}
+
+}
+
 	

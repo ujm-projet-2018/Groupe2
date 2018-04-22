@@ -80,4 +80,8 @@ char* retourne_ecriture(int** tableau_notes,int i);
 
 void modification_tableau_note_bemol(int** tableau_notes,int indice_gamme,int notes_tonalites[30][14]);
 
+int verifier_mineur(int indice_gamme,int* tab_chercher_gamme,int notes_tonalites[30][14]);
+
+void modification_tableau_note_diese(int** tableau_notes,int indice_gamme,int notes_tonalites[30][14]);
+
 #endif
