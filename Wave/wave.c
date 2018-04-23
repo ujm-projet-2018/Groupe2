@@ -65,7 +65,7 @@ int main(int argc, char** argv){
     int filtre = 1, precision = 1, l = 1200, l1 = 1200, h = 750, h1 = 750, op_son = 0, anim = 0, debug = 0, verbeux = 0;   // les options
     int op;    /* sert a determiner les options selectionner */
     int n, depart; // taille pour la fft et indice de depart dans le tableau des amplitudes
-    int nb_note = 0;
+    int nb_note = 0,i;
     int* notes = NULL;
 
     //int ampmax = 0, *tfre, ntfre = 0,nfre=0, ampmaxold = 0, ifreq1 = 0, ifreq2 = 0, ifreqmax1, ifreqmax2;
@@ -296,15 +296,13 @@ int main(int argc, char** argv){
          // on avance de filtre-1 elements dans le fichier (accelere le traitement)
          fseek(fich, (long) ((filtre-1)*(bitsPerSample/8)), SEEK_CUR);
     }
-    // analyse des notes trouvees
-    s = analyse_notes(amplitudes,temps,nb_point);
     // recherche de notes
     notes = decoupage_signal(amplitudes, temps, nb_point, &nb_note);
-    
-    
-    
-    
-    printf("retour Analyse: %s \n",s.note);
+    // analyse des notes trouvees
+    for(i = 0;i<nb_note;i+=2){
+      s = analyse_notes(amplitudes,temps,nb_point,notes[i],notes[i+1]); 
+      printf("retour Analyse: %s tt\n",s.note);
+    }
     /*frequencemax = cleanFrequence(tabfreq,nfre);
     printf("Frequence 1 : %f\n",frequencemax);
     detectionnotes(frequencemax);
@@ -462,7 +460,7 @@ void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double 
     }
     
     // tracer des notes trouvees            
-    tracer_notes(dx, dec_x, dec_y, zoom, notes, nb_note, temps, l, h);
+    //tracer_notes(dx, dec_x, dec_y, zoom, notes, nb_note, temps, l, h);
 
     // tracer du repere    
     tracer_repere(clicx, clicy, dx, zoom, dec_x, dec_y, l, h);
@@ -679,13 +677,12 @@ int* decoupage_signal(short* amplitudes, float* temps, int nb_point, int* nb_n){
             }*/
         }
         
-        if (j > 0){
+        /*if (j > 0){
             fprintf(stderr, "amp_max = %f | amp_prec = %f\n", amplitudes[amp_max]*(375/32768.0), amplitudes[amp_prec]*(375/32768.0));
             fprintf(stderr, "notes[%d] = %d = %f\n", j-1, notes[j-1], amplitudes[notes[j-1]]*(375/32768.0));
             // sleep(1);
-        }
+	    }*/
     }
-    
     notes2 = analyse_periode(notes, temps, j, &nb_note);
     
     /*// alloue un nouveau tableau
@@ -773,24 +770,24 @@ int* analyse_periode(int* periodes, float* temps, int nb_periode, int* nb_note){
     // alloue un nouveau tableau
     int* notes = (int*) calloc(sizeof(int), nb_periode);
     if (notes == NULL){
-        fprintf(stderr, "wave.c::analyse_periode()::probleme lors de l'allocation memoire\n");
-        exit(-1);
+      fprintf(stderr, "wave.c::analyse_periode()::probleme lors de l'allocation memoire\n");
+      exit(-1);
     }
 
     // ajoute obligatoirement une note au debut    
-    *nb_note = 0;
-    *nb_note += 1;
+    *nb_note = 1;
+    //*nb_note += 1;
 
     periode_prec = temps[periodes[1]]-temps[periodes[0]];
     notes[0] = periodes[0];
 
     // deuxieme phase du traitement: apres recuperation des periodes on regarde la duree de chaque periode pour detecter les variations
-    for (i=2; i<nb_periode-2; i++){
+    for (i=2; i<nb_periode-2; i+=2){
         // recupere le debut et la fin de la nouvelle periode
         debut = temps[periodes[i]];
         fin = temps[periodes[i+1]];
 
-        fprintf(stderr, "indice = %d | max_indice = %d | periodes precedente = %f | nouvelle periode = %f\n", i, nb_periode, periode_prec, fin-debut);
+        //fprintf(stderr, "indice = %d | max_indice = %d | periodes precedente = %f | nouvelle periode = %f\n", i, nb_periode, periode_prec, fin-debut);
         // sleep(1);
         
         if (fin-debut > periode_prec*1.06 || fin-debut < periode_prec*1.06){

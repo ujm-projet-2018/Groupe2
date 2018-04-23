@@ -27,7 +27,7 @@ char* detectionnotes(double ff){
       if(i == 11){
 	if(ff < (notes[i][j]+(notes[0][j+1] - notes[i][j])/2) && ff > (notes[i][j]-(notes[i][j]-notes[i-1][j])/2) ) {
 	  sprintf(note,"%s %d",notesS[i],j);
-	  printf("note : %s %d\n",notesS[i],j);
+	  //printf("note : %s %d\n",notesS[i],j);
 	    fin = 1;
 	    break;
 	}
@@ -36,7 +36,7 @@ char* detectionnotes(double ff){
 	if(ff < (notes[i][j]+(notes[i+1][j] - notes[i][j])/2) && ff > (notes[i][j]-(notes[i][j]-notes[11][j-1])/2) ) {
 	  if(i == 0){
 	    sprintf(note,"%s %d",notesS[0],j);
-	    printf("note : %s %d\n",notesS[0],j);
+	    //printf("note : %s %d\n",notesS[0],j);
 	    fin = 1;
 	    break;
 	  }
@@ -44,7 +44,7 @@ char* detectionnotes(double ff){
       }
       else if(ff < (notes[i][j]+(notes[i+1][j] - notes[i][j])/2) && ff > (notes[i][j]-(notes[i][j]-notes[i-1][j])/2) ) {
 	sprintf(note,"%s %d",notesS[i],j);
-	printf("note : %s %d\n",notesS[i],j);
+	//printf("note : %s %d\n",notesS[i],j);
 	fin = 1;
 	break;
       }
@@ -65,7 +65,7 @@ double cleanFrequence2(double *tabfreq,int nfre){
 
 double cleanFrequence3(double *tabfreq,int nfre){
   int del = nfre*0.01,i;
-  printf("del %d\n",del);
+  //printf("del %d\n",del);
   double frequencemax = 0;
   double *tab = tri_fusion(tabfreq,nfre,inf);
   tab = &tab[del];
@@ -127,7 +127,7 @@ double cleanFrequence(double *tabfreq,int nfre){
   return frequencemax;
 }
 
-signal analyse_notes(short *amp, float *temps, int nb_point){
+signal analyse_notes(short *amp, float *temps, int nb_point,int deb, int fin){
   int i;
   short am;
 
@@ -140,12 +140,12 @@ signal analyse_notes(short *amp, float *temps, int nb_point){
   float t2 = 0.0;
   s.tfre = (int*) malloc(sizeof(int)*1);
   s.tabfreq = (double*) malloc(sizeof(double)*1);
-  for(i=0;i<nb_point;i++){
+  for(i=deb;i<fin;i++){
     am = amp[i];
-    /* am = amp[i]/500;
+    am = amp[i]/500;
     if(am > 1){
       am*=10000;
-      }*/
+    }
     t2 = temps[i];
     if (ampmax == 0){
       ampmax = am;
@@ -160,10 +160,8 @@ signal analyse_notes(short *amp, float *temps, int nb_point){
       }
       s.ntfre ++;
       s.nfre ++;
-      printf("test1 %d %d\n",s.ntfre,s.nfre);
       s.tfre = realloc(s.tfre,sizeof(int)*s.ntfre);
       s.tabfreq = realloc(s.tabfreq,sizeof(double)*s.nfre);
-      printf("test2");
       s.tabfreq[s.nfre-1] = frequence;
       s.tfre[s.ntfre-1] = nb_point;
       ampmaxold = ampmax;
@@ -176,16 +174,16 @@ signal analyse_notes(short *amp, float *temps, int nb_point){
   }
 
   frequencemax = cleanFrequence(s.tabfreq,s.nfre);
-  printf("Frequence 1 : %f\n",frequencemax);
+  //printf("Frequence 1 : %f\n",frequencemax);
   detectionnotes(frequencemax);
   frequencemax = cleanFrequence2(s.tabfreq,s.nfre);
-  printf("\nFrequence 2 : %f\n",frequencemax);
+  //printf("\nFrequence 2 : %f\n",frequencemax);
   detectionnotes(frequencemax);
   frequencemax = cleanFrequence3(s.tabfreq,s.nfre);
-  printf("\nFrequence 3 : %f\n",frequencemax);
+  //printf("\nFrequence 3 : %f\n",frequencemax);
   detectionnotes(frequencemax);
-  frequencemax = cleanFrequence4(s.tabfreq,s.nfre);
-  printf("\nFrequence 4 : %f\n",frequencemax);
+  //frequencemax = cleanFrequence4(s.tabfreq,s.nfre);
+  //printf("\nFrequence 4 : %f\n",frequencemax);
   s.note = detectionnotes(frequencemax);
   return s;
   
