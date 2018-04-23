@@ -1,3 +1,4 @@
+
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -29,9 +30,11 @@ public class ParserMidi {
 	Path path = Paths.get("notes.txt");
 
 	String str = "";
-	int trackNumber = 0,duree;
-	double deltaTick, ecart;
-	long tick = 0, lastTick = 0;
+	int trackNumber = 0, duree,silence=0;
+	long deltaTick, ecart;
+	long tick = 0, lastTick = 0,nextTick = 0,deb = 0, fin = 0;
+	int accord = 0,lastAccord=0;
+	deltaTick=ecart=0;
 
 	for (Track track : sequence.getTracks()) {
 	    trackNumber++;
@@ -50,23 +53,18 @@ public class ParserMidi {
 		}
 	    }
 	    System.out.println(nbNotes);
-	    str = Integer.toString(nbNotes) +"\n"+"4 4"+"\n";
+	    str = Integer.toString(nbNotes) + "\n" + "4 4" + "\n";
 	    Files.write(path, str.getBytes(utf8), StandardOpenOption.CREATE);
-			
-			
-            double resolution = sequence.getResolution();      
-            double ticksPerSecond = resolution * (120 / 60.0);
-            double tickSize = 1.0 / ticksPerSecond;          
-            System.out.println("ticksize :"+tickSize);
-            System.out.println("resolution :"+sequence.getResolution());   
+
+	    double resolution = sequence.getResolution();
+	    double ticksPerSecond = resolution * (120 / 60.0);
+	    double tickSize = 1.0 / ticksPerSecond;
+	    System.out.println("ticksize :" + tickSize);
+	    System.out.println("resolution :" + sequence.getResolution());
 
 	    for (int i = 0; i < track.size(); i++) {
 
 		MidiEvent event = track.get(i);
-
-		lastTick = tick;
-		tick = event.getTick();
-					
 
 		System.out.print("@" + event.getTick() + " ");
 		MidiMessage message = event.getMessage();
@@ -76,37 +74,80 @@ public class ParserMidi {
 		    System.out.print("Channel: " + sm.getChannel() + " ");
 
 		    if (sm.getCommand() == NOTE_ON) {
-			deltaTick = 0;
-			ecart = 0;
+						
+			lastTick = tick;
+			tick = event.getTick();
+			nextTick = track.get(i+1).getTick();
+						
 			int key = sm.getData1();
 			int octave = (key / 12) - 1;
 			int note = key % 12;
 			String noteName = NOTE_NAMES[note];
 			int velocity = sm.getData2();
+			deltaTick = 0;
+
 
 			// calcul de la duree
 			if (velocity != 0) {
 			    notesTab[key] = tick;
-			    ecart = tick - lastTick;
+			    deb = tick;
+
 			} else {
 			    deltaTick = tick - notesTab[key];
 			    notesTab[key] = 0;
+							
+			    if(nextTick-tick != 0) {
+							
+				silence = (int) (2 / ((nextTick - tick) * tickSize))*2;
+				silence = (int) (Math.log(silence)/Math.log(2));
+				silence = (int) Math.pow(2, silence);
+				silence = silence > 32 ? 0 : silence;
+			    }else {
+				silence = 0;
+			    }
+							
+			    ecart = nextTick - tick;
+			    if (ecart == 0) {
+				if(lastAccord!=1) {
+				    accord = 1;
+				}else {
+				    accord = 2;
+				}
+			    }else if(tick - lastTick ==0){
+				lastAccord = accord;
+			    }else {
+				accord = lastAccord = 0;
+			    }
 			}
 
-			// note octave dièse temps silence durée
+			// note octave dièse duree silence(=temps avant prochaine note) accord
 
 			if (deltaTick != 0) {
-			    duree = (int)(2/(deltaTick * tickSize));
-			    str += noteName + " " + octave + " " + duree + " 0 ";
+			    duree =  (int) (2 / (deltaTick * tickSize));
+			    duree = (int) (Math.log(duree)/Math.log(2));
+			    duree = (int) Math.pow(2, duree);
+			    str += noteName + " " + octave + " " + duree + " "+silence+" " + accord+" ";
+			    str += "\n";
 			}
-	       
-			str += "\n";
-                        System.out.println("Note on, " + noteName + octave + " key=" + key + " velocity: " + velocity);
-		    }else {
-			System.out.println("Command:" + sm.getCommand());
+
+			System.out.println("Note on, " + noteName + octave + " key=" + key + " velocity: " + velocity);
+		    } else {
+			System.out.println("Command:" + sm.getCommand() + " " + sm.getData1() + " " + sm.getData2());
 		    }
 		} else {
-		    System.out.println("Other message: " + message.getClass());
+		    StringBuilder tempo = new StringBuilder();
+		    byte[] tempobytes = message.getMessage();
+
+		    /*
+		     * for(int k = 3; k < message.getLength();k++) {
+		     * tempo.append(String.format("%02X", tempobytes[k])); }
+		     */
+
+		    for (byte b : message.getMessage()) {
+			tempo.append(String.format("%02X ", b));
+		    }
+		    System.out.println("Other message: " + message.getClass() + " " + message.getStatus() + " "
+				       + tempo.toString() + " ");
 		}
 		Files.write(path, str.getBytes(utf8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 	    }
