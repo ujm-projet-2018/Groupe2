@@ -132,8 +132,8 @@ signal analyse_notes(short *amp, float *temps, int nb_point){
   short am;
 
   signal s;
-  s.ntfre = 1;
-  s.nfre = 1;
+  s.ntfre = 0;
+  s.nfre = 0;
   
   int ampmax = 0, /**tfre, ntfre = 0,nfre=0,*/ ampmaxold = 0;
   double frequence = 0, frequencemax = -1000000, t1 = 0/*,*tabfreq*/;
@@ -160,10 +160,8 @@ signal analyse_notes(short *amp, float *temps, int nb_point){
       }
       s.ntfre ++;
       s.nfre ++;
-      printf("test1 %d %d\n",s.ntfre,s.nfre);
       s.tfre = realloc(s.tfre,sizeof(int)*s.ntfre);
       s.tabfreq = realloc(s.tabfreq,sizeof(double)*s.nfre);
-      printf("test2");
       s.tabfreq[s.nfre-1] = frequence;
       s.tfre[s.ntfre-1] = nb_point;
       ampmaxold = ampmax;

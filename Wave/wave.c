@@ -25,8 +25,8 @@ void tracerSegment(double dx, int dec_x, int dec_y, double zoom, double x1, doub
 void tracerPoint(double dx, int dec_x, double zoom, double x1, double y1, int l, int h);
 int* decoupage_signal(short* amplitudes, float* temps, int nb_point, int* nb_note);
 int* analyse_periode(int* periodes, float* temps, int nb_periode, int* nb_note);
+int* analyse_separation(int* periodes, float* temps, int nb_periode, int* nb_note);
 void tracer_notes(double dx, int dec_x, int dec_y, double zoom, int* notes, int taille, float* temps, int l, int h);
-int* nettoyage(int* notes, int t1, int t2);
 
 
 //void detectionnotes(double ff);
@@ -60,18 +60,15 @@ void usage(char* s){   /* explique le fonctionnement du programme */
 
 
 int main(int argc, char** argv){
-    int compteur = 0, arret = 0, nb_point = 0, dec_x, dec_y, clicx = 0, clicy = 0, spectre = 0, echelley = 700;   // variables gestion du programme
+    int compteur = 0, arret = 0, nb_point = 0, dec_x, dec_y, clicx = 0, clicy = 0, spectre = 0;   // variables gestion du programme  utile: , echelley = 700
     int freqEch, echantillon, defausse_entier, bytePerSec, taille, longueur;   // donnees du fichier WAVE
     int filtre = 1, precision = 1, l = 1200, l1 = 1200, h = 750, h1 = 750, op_son = 0, anim = 0, debug = 0, verbeux = 0;   // les options
     int op;    /* sert a determiner les options selectionner */
-    int n, depart; // taille pour la fft et indice de depart dans le tableau des amplitudes
     int nb_note = 0;
-    int* notes = NULL;
+    int* notes = NULL;    // tableau contenant les notes avec indice de depart dans les positions paires et indice de fin en position impaire
 
-    //int ampmax = 0, *tfre, ntfre = 0,nfre=0, ampmaxold = 0, ifreq1 = 0, ifreq2 = 0, ifreqmax1, ifreqmax2;
-    //double frequence = 0, frequencemax = -1000000, t1 = 0, t2 = 0,*tabfreq;
     float t2;
-    complex* fft = NULL; // tableau comptenant le resultat de la fft
+    //complex* fft = NULL; // tableau comptenant le resultat de la fft
     short* amplitudes = NULL;   // tableau regroupant les amplitudes a chaque point du signal
     float* temps = NULL;    // tableau regroupant le temps associee a l'amplitude de meme indice dans son tableau
     signal s;
@@ -225,59 +222,14 @@ int main(int argc, char** argv){
     // initialisation des tableaux
     amplitudes = (short*) calloc(sizeof(short), nb_point);
     temps = (float*) calloc(sizeof(float), nb_point);
-    //tfre = (int*) malloc(sizeof(int)*1);
-    //tabfreq = (double*) malloc(sizeof(double)*1);
     
     // boucle principale lance une fois l'entete du fichier decrypte: analyse des donnees
-    
     while (compteur*(bitsPerSample/8) < echantillon){
          // remets tous les bits du short 'amp' a 0
          amp = 0;
          // lecture des donnees du fichier WAVE
          fread(&amp, sizeof(char)*(bitsPerSample/8), 1, fich);
-         /*amp /=500;
-	 if(amp > 1){
-	   amp*=10000;
-	   }*/
-         // Lucas fondamental***********************************************************
-	     t2 = (compteur/(bitsPerSample/8))*(1.0/freqEch);
-	     /*ifreq2 = compteur/filtre;
-	     if (ampmax == 0){
-	       ampmax = amp;
-	     }
-	     if(amp > ampmax-(ampmax*0.30) && amp < ampmax*1.30 && t2 > t1+0.001){
-	       if(ampmax != 0){
-	       frequence = 1/(t2-t1); */
-	         /*if(ampmax > 2*ampmaxold){
-	           frequencemax = 0;
-		   }*/
-	         /*if(frequencemax >2*frequence){
-		   nfre--;
-		   frequencemax = 0;
-		   }*/
-	     // if(frequence > frequencemax){  // enregistre la nouvelle frequence max
-	           // recupere les indices de la frequence maximale
-      /*      ifreqmax1 = ifreq1;  
-	           ifreqmax2 = ifreq2;
-	           frequencemax = frequence;
-	         }
-	       }
-	       ntfre ++;
-	       nfre ++;
-	       tfre = realloc(tfre,sizeof(int)*ntfre);
-	       tabfreq = realloc(tabfreq,sizeof(double)*nfre);
-	       tabfreq[nfre-1] = frequence;
-	       tfre[ntfre-1] = compteur/filtre;
-	       ampmaxold = ampmax;
-	       ampmax = amp;
-	       t1 = t2;
-	       ifreq1 = ifreq2;  // recupere les indices des temps t1 et t2 pour avoir l'indice de la frequence max
-	     }else if (amp > ampmax ){
-	       //t1 = t2;
-	       //ifreq1 = ifreq2;
-	       ampmax = amp;
-	       }*/
-	     //*****************************************************************************
+         t2 = (compteur/(bitsPerSample/8))*(1.0/freqEch);
 	     
 	     // affichage des infos sur console
 	     if (verbeux){
@@ -288,7 +240,6 @@ int main(int argc, char** argv){
          // remplissage du tableau
          amplitudes[compteur/filtre] = amp;
          temps[compteur/filtre] = (compteur/(bitsPerSample/8))*(1.0/freqEch);
-	     //printf("%d %f\n",compteur,temps[compteur/filtre]);
          
          // gestion des compteurs
          compteur += filtre;
@@ -296,37 +247,13 @@ int main(int argc, char** argv){
          // on avance de filtre-1 elements dans le fichier (accelere le traitement)
          fseek(fich, (long) ((filtre-1)*(bitsPerSample/8)), SEEK_CUR);
     }
-    // analyse des notes trouvees
-    s = analyse_notes(amplitudes,temps,nb_point);
+        
     // recherche de notes
     notes = decoupage_signal(amplitudes, temps, nb_point, &nb_note);
-    
-    
-    
+    // analyse des notes trouvees
+    s = analyse_notes(amplitudes,temps,nb_point);
     
     printf("retour Analyse: %s \n",s.note);
-    /*frequencemax = cleanFrequence(tabfreq,nfre);
-    printf("Frequence 1 : %f\n",frequencemax);
-    detectionnotes(frequencemax);
-    frequencemax = cleanFrequence2(tabfreq,nfre);
-    printf("\nFrequence 2 : %f\n",frequencemax);
-    detectionnotes(frequencemax);
-    frequencemax = cleanFrequence3(tabfreq,nfre);
-    printf("\nFrequence 3 : %f\n",frequencemax);
-    detectionnotes(frequencemax);
-    frequencemax = cleanFrequence4(tabfreq,nfre);
-    printf("\nFrequence 4 : %f\n",frequencemax);
-    detectionnotes(frequencemax);*/
-
-    
-    
-    // Analyse de fourier sur le signal
-    //n = ifreqmax2-ifreqmax1;  // calcul du nombre de point a analyser pour la frequence max
-    //fprintf(stderr, "nb point fft = %d | freqence max = %f\n", n, frequencemax);
-    //depart = ifreqmax1;   // point de depart dans le tableau des amplitudes  pour l'analyse sur la frequence max
-    //n = pow(2, ((int) log2(n*10))+1);  // transmets la premiere puissance de 2 superieur au nombre de point qui seront analyse
-    //fft = analyseFFT(signalPeriodique(amplitudes, ifreqmax1, ifreqmax2-ifreqmax1, 10), 0, (ifreqmax2-ifreqmax1)*10, n);  // 10 = nombre de fois que la periode trouve doit etre repete
-    
     
     //MLV_Keyboard_button touche;
     if (son != NULL && op_son)
@@ -426,7 +353,6 @@ int main(int argc, char** argv){
     // libere l'espace allouee par la fenetre
     MLV_free_window();
     
-    exit(0);
 }
 
 void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim, int verbeux, int debug,int *tfre, int ntfre, int* notes, int nb_note){
@@ -616,12 +542,12 @@ short* signalPeriodique(short* amplitudes, int depart, int n, int repetition){
 
 
 int* decoupage_signal(short* amplitudes, float* temps, int nb_point, int* nb_n){
-    int amp_max=0, amp_depart=0, amp_prec=0;
+    int amp_max = 0, amp_prec = 0; 
     int test1, test2;
-    int bruit = 1;
-    int i = 0, j = 0, nb_note = nb_point/10;
+    //int bruit = 1;
+    int i = 0, j = 0, nb_note = nb_point;
     
-    float precision = .0;
+    //float precision = .05;
     
     int* notes2;
     int* notes = (int*) malloc(sizeof(int) * nb_point);
@@ -649,91 +575,32 @@ int* decoupage_signal(short* amplitudes, float* temps, int nb_point, int* nb_n){
             //fprintf(stderr, "Test1 = %d\n", test1);
         }while (test1 <= test2 && i < nb_point-1);
         
-        if (test1 > 9.0){
+        if (test1 > 9.0){     // evite le bruit et son trop faible
             // recupere l'amplitude max
             amp_prec = amp_max;
             amp_max = i-1;
         
             // arrondi des amplitudes a tester (enlever de la precision seul la forme generale du signal nous interesse et non les valeures)
-            test1 = amplitudes[amp_max]*(375/32768.0); test2 = amplitudes[amp_prec]*(375/32768.0);
+            //test1 = amplitudes[amp_max]*(375/32768.0); test2 = amplitudes[amp_prec]*(375/32768.0);
             
             // verifie si l'amplitude max ne serait pas un debut de note
-            if (test1 >= test2 *(1.+precision*(test2/20.0))){
-                /*if (!bruit){  // si pas on pas croiser de bruit alors on ajoute deux fois le point: 1 fin de la note 2 debut de la suivante
-                    notes[j] = amp_max;
-                    j++;
-                    // recupere le depart de cette note
-                    amp_depart = amp_max;
-                }*/
-                
+            //if (test1 >= test2 *(1.+precision*(test2/20.0))){
                 notes[j] = amp_max;
                 j ++;
-                //bruit = 0; // on a croiser une note donc pas de bruit
-            }/*else if ((amplitudes[amp_depart]*(375/32768.0))/test2 < -0.5){    // verifie si on est pas en presence d'un bruit blanc: forte decroissance
-                notes[j] = amp_max;
-                j++;
-                bruit = 1;  // on a croiser du bruit
-                
-                // recupere le depart de cette note
-                amp_depart = amp_max;
-            }*/
+            //}
         }
         
         if (j > 0){
-            fprintf(stderr, "amp_max = %f | amp_prec = %f\n", amplitudes[amp_max]*(375/32768.0), amplitudes[amp_prec]*(375/32768.0));
-            fprintf(stderr, "notes[%d] = %d = %f\n", j-1, notes[j-1], amplitudes[notes[j-1]]*(375/32768.0));
-            // sleep(1);
+            //fprintf(stderr, "amp_max = %f | amp_prec = %f\n", amplitudes[amp_max]*(375/32768.0), amplitudes[amp_prec]*(375/32768.0));
+            //fprintf(stderr, "notes[%d] = %d = %f\n", j-1, notes[j-1], amplitudes[notes[j-1]]*(375/32768.0));
         }
     }
     
-    notes2 = analyse_periode(notes, temps, j, &nb_note);
+    //notes2 = analyse_periode(notes, temps, j, &nb_note);
+    notes2 = analyse_separation(notes, temps, j, &nb_note);
     
-    /*// alloue un nouveau tableau
-    notes2 = (int*) calloc(sizeof(int), j);
-    if (notes2 == NULL){
-        fprintf(stderr, "wave.c::decoupe_signel()::probleme lors de l'allocation memoire de notes2\n");
-        exit(-1);
-    }
-    
-    // reinitialise le compteur de note pour ajuster la taille du tableau final
-    nb_note = 0; amp_prec = 0;
-    // deuxieme phase du traitement: apres recuperation des periodes on regarde la duree de chaque periode pour detecter les variations
-    for (i=2; i<j-2; i++){
-        fprintf(stderr, "notes[%d] = %d = %f | notes[%d] = %d = %f\n", amp_prec, notes[amp_prec], amplitudes[notes[amp_prec]]*(375/32768.0), i, notes[i], amplitudes[notes[i]]*(375/32768.0));
-        // sleep(1);
-        
-        if (notes[i] > 0){
-            test1 = amplitudes[notes[amp_prec]]*(375/32768.0); test2 = amplitudes[notes[i]]*(375/32768.0);
-            
-            // verifie si l'amplitude max ne serait pas un debut de note
-            if (notes[i]-notes[amp_prec] >= 44100){
-                amp_prec = i;
-                nb_note ++;
-            }else if (test2 > test1 *(1.+0.1*(test1/20.0))){
-                printf("ici\n");
-                //notes[amp_prec] = -1;
-                //notes[amp_prec+1] = -1;
-                amp_prec = i;
-                nb_note ++;
-            }else{
-                notes[i] = -1;
-                notes[i+1] = -1;
-                //nb_note ++;
-            }
-        }
-        
-    }*/
-    
-    /*notes = nettoyage(notes, nb_point, 2*nb_note);    
-
-    for (i=0; i<nb_note*2; i++)
-        fprintf(stderr, "notes[%d] = %d = %f\n", i, notes[i], amplitudes[notes[i]]*(375/32768.0));
-    */
-    
-    // libere le tableau temporaire 'notes'
-    
+    // libere le tableau temporaire 'notes'    
     free(notes);
-    fprintf(stderr, "ici\n");
     
     //for (i = 0; i<j; i++)
      //   fprintf(stderr, "notes[%d] = %d = %f\n", i, notes[i], amplitudes[notes[i]]*(375/32768.0));
@@ -743,73 +610,107 @@ int* decoupage_signal(short* amplitudes, float* temps, int nb_point, int* nb_n){
 }
 
 
-int* nettoyage(int* notes, int t1, int t2){
-    int i,j = 0;
-    int* notes2 = NULL;
-/*    int* notes2 = (int*) calloc(sizeof(int), t2);
-    if (notes2 == NULL){
-        fprintf(stderr, "wave.c::nettoyage()::probleme lors de la l'allocation memoire du tableau de notes\n");
-        exit(-1);
-    }
-    
-    printf("Nb_note = %d\n", t2);
-    
-    for (i=0; i<t1; i++){
-         if (notes[i] > 0){
-              notes2[j] = notes[i];
-              j ++;
-         }
-    }*/
-    
-    
-    return notes2;
-}
-
-
 int* analyse_periode(int* periodes, float* temps, int nb_periode, int* nb_note){
     float periode_prec, debut, fin;
-    int i,j = 1;
+    int i = 0,j = 0;
     
     // alloue un nouveau tableau
-    int* notes = (int*) calloc(sizeof(int), nb_periode);
+    int* notes = (int*) calloc(sizeof(int), nb_periode*2+1);
     if (notes == NULL){
         fprintf(stderr, "wave.c::analyse_periode()::probleme lors de l'allocation memoire\n");
         exit(-1);
     }
 
+    // cherche une periode valide comme point de depart
+    while ((temps[periodes[i+1]]-temps[periodes[i]] >= 0.0166 || temps[periodes[i+1]]-temps[periodes[i]] <= 0.00022) && i < nb_periode-2){
+        i++;
+    }
+    periode_prec = temps[periodes[i+1]]-temps[periodes[i]];
+
     // ajoute obligatoirement une note au debut    
-    *nb_note = 0;
-    *nb_note += 1;
-
-    periode_prec = temps[periodes[1]]-temps[periodes[0]];
-    notes[0] = periodes[0];
-
+    notes[j] = periodes[i];
+    *nb_note = 1; j ++;
+    
     // deuxieme phase du traitement: apres recuperation des periodes on regarde la duree de chaque periode pour detecter les variations
-    for (i=2; i<nb_periode-2; i++){
+    for (i=i; i<nb_periode-2; i++){
         // recupere le debut et la fin de la nouvelle periode
         debut = temps[periodes[i]];
         fin = temps[periodes[i+1]];
 
-        fprintf(stderr, "indice = %d | max_indice = %d | periodes precedente = %f | nouvelle periode = %f\n", i, nb_periode, periode_prec, fin-debut);
-        // sleep(1);
+        //fprintf(stderr, "indice = %d | max_indice = %d | periodes precedente = %f | nouvelle periode = %f\n", i, nb_periode, periode_prec, fin-debut);
         
-        if (fin-debut > periode_prec*1.06 || fin-debut < periode_prec*1.06){
+        //fprintf(stderr, "prec = %f | periode = %f\n", periode_prec, fin-debut);
+        
+        // verifie s'il ne s'agirai pas d'une fausse periode
+        if (fin-debut >= 0.0166 && fin-debut <= 0.00022){
+            continue;   // on passe si oui
+        }
+
+        
+        if (fin-debut > periode_prec*1.06 || fin-debut < periode_prec*0.94){
+            //fprintf(stderr, "prec+ = %f prec- = %f\n", periode_prec*1.06, periode_prec*0.94);
             notes[j] = periodes[i];
             notes[j+1] = periodes[i];
             j += 2;
             *nb_note += 2;
+            
+            // nouvelle reference pour detecter le changement de periode
+            periode_prec = fin-debut;
         }
         
-        periode_prec = fin-debut;
-        
     }
-    
     
     return notes;
     
 }
 
 
+int* analyse_separation(int* periodes, float* temps, int nb_periode, int* nb_note){
+    float debut, fin;
+    int i = 0,j = 0;
+    
+    // alloue un nouveau tableau
+    int* notes = (int*) calloc(sizeof(int), nb_periode*2+1);
+    if (notes == NULL){
+        fprintf(stderr, "wave.c::analyse_periode()::probleme lors de l'allocation memoire\n");
+        exit(-1);
+    }
+
+    // cherche une periode valide comme point de depart
+    while ((temps[periodes[i+1]]-temps[periodes[i]] >= 0.0166 || temps[periodes[i+1]]-temps[periodes[i]] <= 0.00022) && i < nb_periode-2){
+        i++;
+    }
+
+    // ajoute obligatoirement une note au debut    
+    notes[j] = periodes[i];
+    *nb_note = 1; j ++;
+    
+    // deuxieme phase du traitement: apres recuperation des periodes on regarde la duree de chaque periode pour detecter les variations
+    for (i=i; i<nb_periode-2; i++){
+        // recupere le debut et la fin de la nouvelle periode
+        debut = temps[periodes[i]];
+        fin = temps[periodes[i+1]];
+
+        //fprintf(stderr, "indice = %d | max_indice = %d | periodes precedente = %f | nouvelle periode = %f\n", i, nb_periode, periode_prec, fin-debut);
+        
+        //fprintf(stderr, "periode = %f\n", fin-debut);
+        
+        // verifie s'il n'y a pas un 'trou' dans le traitement ce qui signifie une baisse d'amplitude importante
+        if (fin-debut >= 0.03){
+            notes[j] = periodes[i+1];
+            notes[j+1] = periodes[i+1];
+            j += 2;
+            *nb_note += 2;
+        }
+        
+    }
+    
+    return notes;
+
+}
+
+
 /*void clavier(unsigned char c, int i, int j){   // fonction gerant les evenements clavier
 
 }*/
+
