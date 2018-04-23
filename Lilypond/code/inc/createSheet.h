@@ -9,6 +9,8 @@ int nb_notes_total;
 int temps;
 int chiffrage;
 char type_gamme;
+char clef_partition;
+int gamme_note_precedente;
 
 /*
 Fonction : void init_ly(FILE* f);
@@ -79,6 +81,10 @@ char* retourne_ecriture(int** tableau_notes,int i);
 
 void modification_tableau_note_bemol(int** tableau_notes,int indice_gamme,int notes_tonalites[30][14]);
 
+
+void modification_tableau_note_diese(int** tableau_notes,int indice_gamme,int notes_tonalites[30][14]);
+
 int ecrire_accord(int ligne, FILE* output, int** tableau_notes, int nb_notes_total, int accord, int duree);
+
 
 #endif
