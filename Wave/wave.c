@@ -64,7 +64,7 @@ int main(int argc, char** argv){
     int freqEch, echantillon, defausse_entier, bytePerSec, taille, longueur;   // donnees du fichier WAVE
     int filtre = 1, precision = 1, l = 1200, l1 = 1200, h = 750, h1 = 750, op_son = 0, anim = 0, debug = 0, verbeux = 0;   // les options
     int op;    /* sert a determiner les options selectionner */
-    int nb_note = 0;
+    int nb_note = 0,i;
     int* notes = NULL;    // tableau contenant les notes avec indice de depart dans les positions paires et indice de fin en position impaire
 
     float t2;
@@ -247,13 +247,13 @@ int main(int argc, char** argv){
          // on avance de filtre-1 elements dans le fichier (accelere le traitement)
          fseek(fich, (long) ((filtre-1)*(bitsPerSample/8)), SEEK_CUR);
     }
-        
     // recherche de notes
     notes = decoupage_signal(amplitudes, temps, nb_point, &nb_note);
     // analyse des notes trouvees
-    s = analyse_notes(amplitudes,temps,nb_point);
-    
-    printf("retour Analyse: %s \n",s.note);
+    for(i = 0;i<nb_note;i+=2){
+      s = analyse_notes(amplitudes,temps,nb_point,notes[i],notes[i+1]); 
+      printf("retour Analyse: %s tt\n",s.note);
+    }
     
     //MLV_Keyboard_button touche;
     if (son != NULL && op_son)
@@ -353,6 +353,7 @@ int main(int argc, char** argv){
     // libere l'espace allouee par la fenetre
     MLV_free_window();
     
+    exit(0);
 }
 
 void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim, int verbeux, int debug,int *tfre, int ntfre, int* notes, int nb_note){
@@ -388,6 +389,7 @@ void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double 
     }
     
     // tracer des notes trouvees            
+    //tracer_notes(dx, dec_x, dec_y, zoom, notes, nb_note, temps, l, h);
     tracer_notes(dx, dec_x, dec_y, zoom, notes, nb_note, temps, l, h);
 
     // tracer du repere    
@@ -590,12 +592,11 @@ int* decoupage_signal(short* amplitudes, float* temps, int nb_point, int* nb_n){
             //}
         }
         
-        if (j > 0){
+        /*if (j > 0){
             //fprintf(stderr, "amp_max = %f | amp_prec = %f\n", amplitudes[amp_max]*(375/32768.0), amplitudes[amp_prec]*(375/32768.0));
             //fprintf(stderr, "notes[%d] = %d = %f\n", j-1, notes[j-1], amplitudes[notes[j-1]]*(375/32768.0));
-        }
+	    }*/
     }
-    
     //notes2 = analyse_periode(notes, temps, j, &nb_note);
     notes2 = analyse_separation(notes, temps, j, &nb_note);
     
@@ -672,8 +673,8 @@ int* analyse_separation(int* periodes, float* temps, int nb_periode, int* nb_not
     // alloue un nouveau tableau
     int* notes = (int*) calloc(sizeof(int), nb_periode*2+1);
     if (notes == NULL){
-        fprintf(stderr, "wave.c::analyse_periode()::probleme lors de l'allocation memoire\n");
-        exit(-1);
+      fprintf(stderr, "wave.c::analyse_periode()::probleme lors de l'allocation memoire\n");
+      exit(-1);
     }
 
     // cherche une periode valide comme point de depart
