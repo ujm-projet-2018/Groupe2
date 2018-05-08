@@ -5,21 +5,13 @@
 #include <complex.h>
 #include <unistd.h>
 
+#include "fft.h"
 
 
 #define PI 3.141592645
 #define ZOOM_X 1000.0
 #define VITESSE_DX 10
 #define VITESSE_ZOOM 1.05
-
-
-void recupere_mot(char mot[5], FILE* fich, int debug);
-complex* analyse(short* amplitudes, int depart, int fin, int N);
-complex* recupere_point_complex(short* amplitudes, int depart, int fin, int n);
-void tracer_spectre(complex* fft, int clicx, int clicy, int n, double dx, double zoomx, int dec_x, int dec_y, double echelley, int freqEch, int l, int h);
-void tracer_repere_spectre(int clicx, int clicy, double dx, double zoomx, int dec_x, int dec_y, double max, int n, int freqEch, int l, int h);
-void affiche_tab(short* amplitudes, int echan_fourier);
-short* signal_sinus(int n);
 
 
 
@@ -55,7 +47,6 @@ int main(int argc, char** argv){
     double zoom = 1.0, dx = 0.0;
     
     short amp, defausse_short, nbCanaux, bitsPerSample, bytePerBloc;
-    MLV_Keyboard_button touche;
     char* nomFich = NULL;
     char mot[5];   // permet de recuperer les mot de longueur 4 qui servent a identifier chaque bloc
     mot[4] = '\0';   //rajoute la fin du mot directement
@@ -202,9 +193,6 @@ int main(int argc, char** argv){
     tracer_spectre(fft, clicx, clicy, nb_point_fourier, dx, zoom, dec_x, dec_y, echelley, freqEch, l, h);
     // visualisation du graphe
     while (!arret){
-         
-         //MLV_wait_keyboard(&touche, NULL, NULL);
-         //fprintf(stderr, "touche = %d\n", touche);
          // gestion des controles
          if (MLV_get_keyboard_state(276) == MLV_PRESSED){   // fleche droite
              dx += VITESSE_DX*(1.0/zoom);
@@ -418,13 +406,14 @@ void tracer_spectre(complex* fft, int clicx, int clicy, int n, double dx, double
      double x = 0, y = cabs(fft[0])*echelley/max;
      double T = 1.0/freqEch;  // duree d'un echantillon
      
-     for (i = 0.0; i<8000.0/*n/2-1*/; i += 1/(T*n)){
-          indice = (i+1)*T*n;
-          tracerSegment(dx, l/2, dec_y, zoomx, x, y, (i+1)/8.0, cabs(fft[indice])*echelley/max, l, h);
+     for (i = 0.0; i<8000.0; i += 1/(T*n)){   // affiche les 8000 premieres frequences
+          indice = (i+1)*T*n; // calcule l'indice du tableau a partir de la frequence
+          tracerSegment(dx, l/2, dec_y, zoomx, x, y, (i+1)/8.0, cabs(fft[indice])*echelley/max, l, h);  // divise les x par 8 car on veut que le graphes tienne dans 1000 px
           x = (i+1)/8.0;
           y = cabs(fft[indice])*echelley/max;
      }
      
+     // trace le repere du graphe
      tracer_repere_spectre(clicx, clicy, dx, zoomx, dec_x, dec_y, 1.0, n, freqEch, l, h);
      
      MLV_actualise_window();
@@ -501,7 +490,7 @@ void recupere_mot(char mot[5], FILE* fich, int debug){    // recupere un mot de 
     fread(mot+3, sizeof(char), 1, fich);
 }
 
-
+// permet de generer un signal sinusoidale pour les testes d'une certaine longueur
 short* signal_sinus(int n){
     int i;
     short* amp = (short*) malloc(sizeof(short)*n);
@@ -516,7 +505,7 @@ short* signal_sinus(int n){
     return amp;
 }
 
-
+// fonction servant au debbugage de la FFT
 void affiche_tab(short* amplitudes, int echan_fourier){
     int i;
     
