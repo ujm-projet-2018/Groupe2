@@ -14,6 +14,8 @@
 #define VITESSE_ZOOM 1.05
 
 
+int lettre_valide(char lettre, int debug);
+
 
 void usage(char* s){   /* explique le fonctionnement du programme */
   fprintf(stderr,"Usage: %s [options] -f <fichier wav>\n",s);
@@ -36,7 +38,7 @@ void usage(char* s){   /* explique le fonctionnement du programme */
 
 int main(int argc, char** argv){
     int compteur = 0, arret = 0, nb_point = 0, dec_x, dec_y, clicx = 0, clicy = 0, echelley = 700;   
-    int freqEch = 44100, echantillon, defausse_entier, bytePerSec, taille, longueur;   // donnees du fichier WAVE
+    int freqEch = 44100, echantillon, bytePerSec, taille, longueur;   // donnees du fichier WAVE
     int l = 1200, h = 750, l1 = 1200, h1 = 750, nb_point_fourier = 16384, filtre = 1, debug = 1, depart = 0, fin = 0;   // les options
     int op;    /* sert a determiner les options selectionner */
     float duree;
@@ -113,33 +115,55 @@ int main(int argc, char** argv){
     
     // lecture de l'entete au moins 44 bytes a traiter
     recupere_mot(mot, fich, debug);   // recupere le mot DataBlocID
+    // cherche le bloc de donne appele 'data' pour commencer la lecture
     while(mot[0] != 'd' || mot[1] != 'a' || mot[2] != 't' || mot[3] != 'a'){   // on recommence tant que la constante 'data' n'a pas ete trouver
         if (mot[0] == 'R' && mot[1] == 'I' && mot[2] == 'F' && mot[3] == 'F'){   // on traite les blocs importants: RIFF, cue, fmt
             fread(&taille, sizeof(int), 1, fich);  //FileSize
-            fread(&defausse_entier, sizeof(int), 1, fich);  //FileFormatID
-            // TODO si autre que 'WAVE' alors on quitte car le fichier n'est pas un fichier wave
+            // verifie si on se trouve bien dans un fichier WAVE
+            recupere_mot(mot, fich, debug);
+            if (!(mot[0] == 'W' && mot[1] == 'A' && mot[2] == 'V' && mot[3] == 'E')){
+                fprintf(stderr, "Identifiant %s trouvé à la place du mot 'WAVE' dans le bloc RIFF de votre fichier, il ne s'agit pas d'un fichier WAVE (arret du programme)\n", mot);
+                exit(-1);
+            }
         }else if (mot[0] == 'c' && mot[1] == 'u' && mot[2] == 'e'){
             fread(&longueur, sizeof(int), 1, fich);  // CUE CHUNK longueur du bloc
+            if (debug)
+                fprintf(stderr, "[DEBUG] longueur = %d\n", longueur);
             fseek(fich, (long) longueur, SEEK_CUR);    // se deplace de la longuer du bloc
         }else if (mot[0] == 'f' && mot[1] == 'm' && mot[2] == 't'){
             fread(&longueur, sizeof(int), 1, fich);  //BlocSize
+            if (debug)
+                fprintf(stderr, "[DEBUG] longueur = %d\n", longueur);
             fread(&defausse_short, sizeof(short), 1, fich);  //AudioFormat
             fread(&nbCanaux, sizeof(short), 1, fich);  //NbrCanaux
             fread(&freqEch, sizeof(int), 1, fich);  //Frequence
             fread(&bytePerSec, sizeof(int), 1, fich);  //BytePerSec
             fread(&bytePerBloc, sizeof(short), 1, fich);  //BytePerBloc
             fread(&bitsPerSample, sizeof(short), 1, fich);  //BitsPerSample
-            fseek(fich, (long) (longueur-16), SEEK_CUR);    // se deplace de la longueur du bloc-16(les donnees lus)
+            fseek(fich, (long) (longueur-16), SEEK_CUR);    // se deplace de la longueur du bloc-16(les donnees deja lues)
         }else if (mot[0] == 'L' && mot[1] == 'I' && mot[2] == 'S' && mot[3] == 'T'){
             fread(&longueur, sizeof(int), 1, fich);  // LIST CHUNK longueur du bloc
+            if (debug)
+                fprintf(stderr, "[DEBUG] longueur = %d\n", longueur);
             fseek(fich, (long) longueur, SEEK_CUR);    // se deplace de la longueur du bloc
+        }else if (!lettre_valide(mot[0], debug) || !lettre_valide(mot[1], debug) || !lettre_valide(mot[2], debug) || !lettre_valide(mot[3], debug)){ // verifie si l'entete a du sens
+            fprintf(stderr, "Le nom du bloc n'est pas valide (arret du programme)\n");
+            exit(-1);
         }else{
             fread(&longueur, sizeof(int), 1, fich);  // recupere la longueur du bloc inconnu
+            if (debug)
+                fprintf(stderr, "[DEBUG] longueur = %d\n", longueur);
             fseek(fich, (long) longueur, SEEK_CUR);    // se deplace de la longueur du bloc
         }
         recupere_mot(mot, fich, debug);   // recupere le mot DataBlocID
     }
-    fread(&echantillon, sizeof(int), 1, fich);  //DataSize util pour arreter la boucle principale
+    fread(&echantillon, sizeof(int), 1, fich);  //DataSize utile pour arreter la boucle principale
+    
+    // verifie que le format soit compatible avec notre programme
+    if (bitsPerSample != 16){
+        fprintf(stderr, "Le format du fichier WAVE fournit n'est pas compatible avec notre programme\n");
+        fprintf(stderr, "Données codées sur %d bits changez pour un codage des données sur 16 bits\n", bitsPerSample);
+    }
     
     // augmente la valeur du filtre pour ne garder les points que d'un seul canal
     filtre *= nbCanaux;
@@ -488,6 +512,12 @@ void recupere_mot(char mot[5], FILE* fich, int debug){    // recupere un mot de 
     fread(mot+1, sizeof(char), 1, fich);
     fread(mot+2, sizeof(char), 1, fich);
     fread(mot+3, sizeof(char), 1, fich);
+}
+
+int lettre_valide(char lettre, int debug){
+    if (debug)
+        fprintf(stderr, "[DEBUG] lettre lu %c\n", lettre);
+    return (lettre == ' ' || (lettre >= 'a' && lettre <= 'z') || (lettre >= 'A' && lettre <= 'Z'));
 }
 
 // permet de generer un signal sinusoidale pour les testes d'une certaine longueur

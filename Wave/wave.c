@@ -18,6 +18,7 @@
 short* signalPeriodique(short* amplitudes, int depart, int n, int repetition);
 void tracer_repere(int clicx, int clicy, double dx, double zoomx, int dec_x, int dec_y, int l, int h);
 void recupere_mot(char mot[5], FILE* fich, int debug);
+int lettre_valide(char lettre, int debug);
 void tracerCourbe(int clicx, int clicy, double dx, int dec_x, int dec_y, double zoom, short* amplitude, float* temps, int nb_point, int filtre, int l, int h, int anim, int verbeux, int debug, int *tfre, int ntfre, int* notes, int nb_note);
 void tracerSegment(double dx, int dec_x, int dec_y, double zoom, double x1, double y1, double x2, double y2, int l, int h, int bool, MLV_Color color);
 void tracerPoint(double dx, int dec_x, double zoom, double x1, double y1, int l, int h);
@@ -25,14 +26,6 @@ int* decoupage_signal(short* amplitudes, float* temps, int debut, int fin, int t
 int* analyse_periode(int* periodes, float* temps, int nb_periode, int* nb_note);
 int* analyse_separation(int* periodes, float* temps, int nb_periode, int* nb_note);
 void tracer_notes(double dx, int dec_x, int dec_y, double zoom, int* notes, int taille, float* temps, int l, int h);
-
-
-double cleanFrequence(double *tabfreq,int nfre);
-double* tri_fusion_notes(double *tab,int nbel);
-double* tri_fusion_notes_bis(double *tab1,int nbel1,double *tab2, int nbel2);
-double cleanFrequence2(double *tabfreq,int nfre);
-double cleanFrequence3(double *tabfreq,int nfre);
-double cleanFrequence4(double *tabfreq,int nfre);
 
 
 void usage(char* s){   /* explique le fonctionnement du programme */
@@ -58,7 +51,7 @@ void usage(char* s){   /* explique le fonctionnement du programme */
 
 int main(int argc, char** argv){
     int compteur = 0, arret = 0, nb_point = 0, dec_x, dec_y, clicx = 0, clicy = 0, spectre = 0;   // variables gestion du programme  utile: , echelley = 700
-    int freqEch, echantillon, defausse_entier, bytePerSec, taille, longueur;   // donnees du fichier WAVE
+    int freqEch, echantillon, bytePerSec, taille, longueur;   // donnees du fichier WAVE
     int filtre = 1, precision = 1, l = 1200, l1 = 1200, h = 750, h1 = 750, op_son = 0, anim = 0, debug = 0, verbeux = 0;   // les options
     int op;    /* sert a determiner les options selectionner */
     int nb_note = 0, i;
@@ -151,10 +144,16 @@ int main(int argc, char** argv){
     
     // lecture de l'entete au moins 44 bytes a traiter
     recupere_mot(mot, fich, debug);   // recupere le mot DataBlocID
+    // cherche le bloc de donne appele 'data' pour commencer la lecture
     while(mot[0] != 'd' || mot[1] != 'a' || mot[2] != 't' || mot[3] != 'a'){   // on recommence tant que la constante 'data' n'a pas ete trouver
         if (mot[0] == 'R' && mot[1] == 'I' && mot[2] == 'F' && mot[3] == 'F'){   // on traite les blocs importants: RIFF, cue, fmt
             fread(&taille, sizeof(int), 1, fich);  //FileSize
-            fread(&defausse_entier, sizeof(int), 1, fich);  //FileFormatID
+            // verifie si on se trouve bien dans un fichier WAVE
+            recupere_mot(mot, fich, debug);
+            if (!(mot[0] == 'W' && mot[1] == 'A' && mot[2] == 'V' && mot[3] == 'E')){
+                fprintf(stderr, "Identifiant %s trouvé à la place du mot 'WAVE' dans le bloc RIFF de votre fichier, il ne s'agit pas d'un fichier WAVE (arret du programme)\n", mot);
+                exit(-1);
+            }
         }else if (mot[0] == 'c' && mot[1] == 'u' && mot[2] == 'e'){
             fread(&longueur, sizeof(int), 1, fich);  // CUE CHUNK longueur du bloc
             if (debug)
@@ -170,12 +169,15 @@ int main(int argc, char** argv){
             fread(&bytePerSec, sizeof(int), 1, fich);  //BytePerSec
             fread(&bytePerBloc, sizeof(short), 1, fich);  //BytePerBloc
             fread(&bitsPerSample, sizeof(short), 1, fich);  //BitsPerSample
-            fseek(fich, (long) (longueur-16), SEEK_CUR);    // se deplace de la longueur du bloc-16(les donnees lus)
+            fseek(fich, (long) (longueur-16), SEEK_CUR);    // se deplace de la longueur du bloc-16(les donnees deja lues)
         }else if (mot[0] == 'L' && mot[1] == 'I' && mot[2] == 'S' && mot[3] == 'T'){
             fread(&longueur, sizeof(int), 1, fich);  // LIST CHUNK longueur du bloc
             if (debug)
                 fprintf(stderr, "[DEBUG] longueur = %d\n", longueur);
             fseek(fich, (long) longueur, SEEK_CUR);    // se deplace de la longueur du bloc
+        }else if (!lettre_valide(mot[0], debug) || !lettre_valide(mot[1], debug) || !lettre_valide(mot[2], debug) || !lettre_valide(mot[3], debug)){ // verifie si l'entete a du sens
+            fprintf(stderr, "Le nom du bloc n'est pas valide (arret du programme)\n");
+            exit(-1);
         }else{
             fread(&longueur, sizeof(int), 1, fich);  // recupere la longueur du bloc inconnu
             if (debug)
@@ -184,8 +186,14 @@ int main(int argc, char** argv){
         }
         recupere_mot(mot, fich, debug);   // recupere le mot DataBlocID
     }
-    fread(&echantillon, sizeof(int), 1, fich);  //DataSize util pour arreter la boucle principale
+    fread(&echantillon, sizeof(int), 1, fich);  //DataSize utile pour arreter la boucle principale
     
+    // verifie que le format soit compatible avec notre programme
+    if (bitsPerSample != 16){
+        fprintf(stderr, "Le format du fichier WAVE fournit n'est pas compatible avec notre programme\n");
+        fprintf(stderr, "Données codées sur %d bits changez pour un codage des données sur 16 bits\n", bitsPerSample);
+    }    
+
     // augmente la valeur du filtre pour ne garder les points que d'un seul canal
     filtre *= nbCanaux;
     // calcule du nombre de point a recupere dans les tableaux
@@ -468,6 +476,12 @@ void recupere_mot(char mot[5], FILE* fich, int debug){    // recupere un mot de 
     fread(mot+3, sizeof(char), 1, fich);
     if (debug)
         fprintf(stderr, "[DEBUG] mot = %s\n", mot);   // affiche le mot trouvee pour debugage
+}
+
+int lettre_valide(char lettre, int debug){
+    if (debug)
+        fprintf(stderr, "[DEBUG] lettre lu %c\n", lettre);
+    return (lettre == ' ' || (lettre >= 'a' && lettre <= 'z') || (lettre >= 'A' && lettre <= 'Z'));
 }
 
 // calcul la moyenne de la duree d'une note
