@@ -638,7 +638,7 @@ int chercher_gamme_bemol(int notes_tonalites[30][14],int* tab_chercher_gamme){
 	return -1; //Quand aucune gamme avec une armure contenant des dieses n'a ete trouver
 }
 
-void reconnaissance_gamme(int** tableau_notes,FILE* output){
+void reconnaissance_gamme_av(int** tableau_notes,FILE* output){
 
 	int* tab_chercher_gamme = remplir_tab_chercher_gamme(tableau_notes);
 	char noms_tonalites[30][4];
@@ -666,6 +666,55 @@ void reconnaissance_gamme(int** tableau_notes,FILE* output){
 	}
 	
 	
+	
+	
+	/*On ecrit dans le fichier le nom de la gamme*/
+	if(noms_tonalites[indice_gamme][2] == 'f' || noms_tonalites[indice_gamme][2] =='s'){
+		alt = noms_tonalites[indice_gamme][2];
+	}
+	if(noms_tonalites[indice_gamme][1] == 'M'){
+        	fprintf(output, "\\key %c%c \\major\n",noms_tonalites[indice_gamme][0] ,alt);
+	}
+	else{
+        	fprintf(output, "\\key %c%c \\minor\n",noms_tonalites[indice_gamme][0] ,alt);
+	}
+	
+}
+
+void reconnaissance_gamme(int** tableau_notes,FILE* output){
+
+	int* tab_chercher_gamme = remplir_tab_chercher_gamme(tableau_notes);
+	char noms_tonalites[30][4];
+	int notes_tonalites[30][14];
+	int indice_gamme=0;
+	int* tab_minima = malloc(14 * sizeof(int));;
+	char alt = ' ';//Sert si le nom de la gamme est diese ou bemol
+
+	initialisation_tableau_gamme(noms_tonalites,notes_tonalites);//Creation des differentes gammes	
+
+	afficher_gamme_et_noms(noms_tonalites,notes_tonalites);
+	/*Affiche le tableau de la partition pour verification : */
+	int i;
+	for(i=0;i<14;i++){ 
+		fprintf(stderr,"%d ",tab_chercher_gamme[i]);}
+	fprintf(stderr,"\n");
+
+	trie_note(tab_chercher_gamme ,tab_minima);
+	for(i=0;i<14;i++){ 
+		fprintf(stderr,"%d ",tab_minima[i]);}
+	fprintf(stderr,"\n");
+        /*On cherche la gamme*/
+	indice_gamme = chercher_gamme(notes_tonalites,tab_minima);
+	type_gamme ='s';//Variable globale servant pour plus tard pour ecrire les notes dans le fichier
+	if(indice_gamme <0){indice_gamme =0; type_gamme ='r';}
+	else if(indice_gamme >15){
+		type_gamme ='f';
+		modification_tableau_note_bemol(tableau_notes,indice_gamme,notes_tonalites);
+	}else{
+		modification_tableau_note_diese(tableau_notes,indice_gamme,notes_tonalites);
+
+	}
+
 	
 	
 	/*On ecrit dans le fichier le nom de la gamme*/
@@ -850,4 +899,58 @@ int ecrire_accord (int ligne, FILE* output, int** tableau_notes, int nb_notes_to
     }
     
     return i - 1;
+}
+
+void trie_note(int* tab_chercher_gamme ,int* minima_gamme){
+	int tab_chercher_gamme_trier[7]={-1,-1,-1,-1,-1,-1,-1};
+	int i=0,j=0,trouver = 0;
+	int nombre_notes_presente;
+	int nombre_notes_precedente;
+	int m;
+	
+	/*On regarde les notes les plus presente suceptible de composer la gamme*/
+	while(i<14){
+		j=0;trouver=0;
+		nombre_notes_presente = tab_chercher_gamme[i];
+		while(j<7 && trouver == 0){
+			if(tab_chercher_gamme_trier[j] == -1){
+				tab_chercher_gamme_trier[j]=i;
+				trouver = 1;
+			}
+			/*Faire quand autre*/
+			else{
+				nombre_notes_precedente = tab_chercher_gamme[tab_chercher_gamme_trier[j]];
+				if(nombre_notes_precedente < nombre_notes_presente){
+					trie(i,j,tab_chercher_gamme_trier);
+					trouver = 1 ;
+					
+				}
+			}
+			j++;
+			
+		}
+	for(m=0;m<7;m++){
+		fprintf(stderr,"tab_cher_cher %d %d \n",m,tab_chercher_gamme_trier[m]);
+	
+	}
+		minima_gamme[i]=0;
+		i++;	
+	}
+	/*On rempli minima_gamme qui sera la nouvelle gamme traité*/
+	for(i=0;i<7;i++){
+		fprintf(stderr,"tab_cher_cher %d \n",tab_chercher_gamme_trier[i]);
+		minima_gamme[tab_chercher_gamme_trier[i]] = 1;
+	}
+}
+
+void trie(int indice_note_new,int indice_insertion,int tab_chercher_gamme_trier[7]){
+	int tmp,rpm;
+	int k;
+	rpm = indice_note_new;
+
+	for(k=indice_insertion;k<7;k++){
+		tmp=tab_chercher_gamme_trier[k];
+		tab_chercher_gamme_trier[k]=rpm;
+		rpm=tmp;
+	}
 }
