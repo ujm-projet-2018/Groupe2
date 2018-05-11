@@ -1,4 +1,4 @@
-CC = gcc -Wall
+CC = gcc -Wall -g
 FLAGS = -lm
 
 createSheet: createSheet.o
