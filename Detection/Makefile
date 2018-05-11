@@ -1,6 +1,6 @@
 
 spectre: detection_notes.c fft analyse_notes tri_fusion_tab
-	gcc -Wall -g `pkg-config --cflags MLV` `pkg-config --libs-only-other --libs-only-L MLV` detection_notes.c fft.o analyse_notes.o tri_fusion_tab.o -o detection_notes `pkg-config --libs-only-l MLV` -lm
+	gcc -Wall -g  detection_notes.c fft.o analyse_notes.o tri_fusion_tab.o -o detection_notes -lm
 
 fft: fft.c fft.h
 	gcc -c -Wall fft.c -o fft.o

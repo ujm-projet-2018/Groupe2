@@ -1,5 +1,6 @@
 #include "analyse_notes.h"
 #include <string.h>
+
 int inf(elem e1,elem e2){
   return e1<e2;
 }

@@ -1,4 +1,3 @@
-#include <MLV/MLV_all.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -7,7 +6,6 @@
 #define PI 3.14156
 
 
-void tracer_repere_spectre(int clicx, int clicy, double dx, double zoomx, int dec_x, int dec_y, double max, int n, int freqEch, int l, int h);
 
 // cherche le module max du tableau de complex
 double tab_max(complex* tab, int n){
@@ -133,106 +131,6 @@ complex* analyseFFT(short* amplitudes, int depart, int fin, int q){
      }
 
      return freq;
-}
-
-
-void tracerSegmentFFT(double dx, int dec_x, int dec_y, double zoom, double x1, double y1, double x2, double y2, int l, int h){
-
-    // transformation de la coordonnee x1 (zoom + decalage du zoom) 
-    x1 = (dx+x1-dec_x)*zoom;
-    x1 += dec_x;
-
-    // transformation de la coordonnee x2 (zoom + decalage du zoom)
-    x2 = (dx+x2-dec_x)*zoom;
-    x2 += dec_x;
-    
-    // tracer du segment grace a MLV
-    if (x1>=0 && x2>=0 && y1>=0 && y2>=0 && x1<=l && x2<=l && y1<=h && y2<=h)
-        MLV_draw_line((int) x1, (int) (h-dec_y)-y1, (int) x2, (int) (h-dec_y)-y2, MLV_rgba(150,20,20,255));
-    
-}
-
-
-void tracer_spectre(complex* fft, int clicx, int clicy, int n, double dx, double zoomx, int dec_x, int dec_y, double echelley, int freqEch, int l, int h){
-     int indice;
-     double i;
-     double max = tab_max(fft, n);
-     double x = 0, y = cabs(fft[0])*echelley/max;
-     double T = 1.0/freqEch;  // duree d'un echantillon
-     
-     for (i = 0.0; i<8000.0/*n/2-1*/; i += 1/(T*n)){
-          indice = (i+1)*T*n;
-          tracerSegmentFFT(dx, l/2, dec_y, zoomx, x, y, (i+1)/8.0, cabs(fft[indice])*echelley/max, l, h);
-          x = (i+1)/8.0;
-          y = cabs(fft[indice])*echelley/max;
-     }
-     
-     tracer_repere_spectre(clicx, clicy, dx, zoomx, dec_x, dec_y, 1.0, n, freqEch, l, h);
-     
-     MLV_actualise_window();
-}
-
-
-void tracer_repere_spectre(int clicx, int clicy, double dx, double zoomx, int dec_x, int dec_y, double max, int n, int freqEch, int l, int h){
-    int i, pas = 100, nb_grad = 10;
-    double valeur, czoom;
-    int tailleText = 0;
-    char text[10];
-    char valeurs[25]="(0.000, 0.000)";
-    
-    text[9] = '\0';
-    
-    czoom = l/2-dx;   // on zoom les valeures par rapport a leur representation et non a leur coordonnees dans la fenetre
-    // trace de la croix permettant de connaitre une coordonnee precise
-    if (clicx != 0 && clicy != 0){
-        MLV_draw_line(0, clicy, l, clicy, MLV_rgba(50, 150, 50, 255));
-        MLV_draw_line(clicx, 0, clicx, h, MLV_rgba(50, 150, 50, 255));
-    }
-    
-    // tracer la valeur en x et y pointee par la souris
-    if (clicx != 0 && clicy != 0){
-        valeur = (clicx-dx)-czoom;   // je recentre ma valeur x-dx sur l'origine
-        valeur /= zoomx;    // je fais la mise a l'echelle inverse au zoom
-        valeur += czoom;   // je repositionne ma valeur
-        valeur = valeur*8;
-        sprintf(valeurs,"(%.3lf, %.3lf)", valeur, (double) (h-dec_y-clicy)*(max/h));
-    }
-    MLV_draw_text(l-150, 25, valeurs, MLV_rgba(50, 150, 50, 255));
-    
-    // trace le repere de l'axe des x
-    MLV_draw_line(5, h-5, l, h-5, MLV_rgba(50, 150, 50, 255));
-    // trace la graduation
-    for (i=pas/nb_grad; i<l; i+=(pas/nb_grad)){
-        if (i % pas == 0){
-            valeur = (i-dx)-czoom;   // je recentre ma valeur x-dx sur l'origine
-            valeur /= zoomx;    // je fais la mise a l'echelle inverse au zoom
-            valeur += czoom;   // je repositionne ma valeur
-            valeur = valeur*8;
-            sprintf(text,"%.3lf", valeur);
-            MLV_get_size_of_text(text, &tailleText, NULL);
-            MLV_draw_line(i, h-5, i, h-15, MLV_rgba(20, 12, 174, 255));
-            if (valeur > 0 && valeur <= 8000){
-                 MLV_draw_text((i-tailleText/2), h-30, text, MLV_rgba(20, 12, 174, 255));
-            }
-        }else{
-            MLV_draw_line(i, h-5, i, h-10, MLV_rgba(20, 12, 174, 255));
-        }
-    }
-    
-    // trace le repere de l'axe des y
-    MLV_draw_line(5, h-5, 5, 0, MLV_rgba(0, 0, 255, 255));
-    // trace la graduation
-    for (i=0; i<h; i+=(pas/nb_grad)){
-        if (i % pas == 0){
-            sprintf(text,"%.3lf",i*(max/h));
-            MLV_get_size_of_text(text, NULL, &tailleText);
-            MLV_draw_line(5, (h-dec_y)-i, 15, (h-dec_y)-i, MLV_rgba(0, 0, 255, 255));
-            MLV_draw_text(20, (h-dec_y)-i-tailleText/2, text, MLV_rgba(0, 0, 255, 255));
-        }else{
-            MLV_draw_line(5, (h-dec_y)+i, 10, (h-dec_y)+i, MLV_rgba(0, 0, 255, 255));
-            MLV_draw_line(5, (h-dec_y)-i, 10, (h-dec_y)-i, MLV_rgba(0, 0, 255, 255));
-        }
-    }
 }
 
 
