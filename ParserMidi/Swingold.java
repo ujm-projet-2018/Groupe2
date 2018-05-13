@@ -1,3 +1,4 @@
+
 import java.awt.Desktop;
 import java.awt.event.*;
 import java.io.BufferedReader;
@@ -48,8 +49,6 @@ public class Swing extends javax.swing.JFrame {
         jButton3 = new javax.swing.JButton();
         jButton4 = new javax.swing.JButton();
         jButton5 = new javax.swing.JButton();
-        jButton6 = new javax.swing.JButton();
-        jButton7 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -62,10 +61,6 @@ public class Swing extends javax.swing.JFrame {
         jButton4.setText("ly vers pdf");
         
         jButton5.setText("ouvrir pdf");
-        
-        jButton6.setText("Wav vers pdf");
-        
-        jButton7.setText("Midi vers pdf");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -82,10 +77,6 @@ public class Swing extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButton5)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton6)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton7)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGap(0, 211, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -96,9 +87,7 @@ public class Swing extends javax.swing.JFrame {
                     .addComponent(jButton2)
                     .addComponent(jButton3)
                     .addComponent(jButton4)
-                    .addComponent(jButton5)
-                    .addComponent(jButton6)
-                    .addComponent(jButton7))
+                    .addComponent(jButton5))
                 .addGap(0, 269, Short.MAX_VALUE))
         );
         
@@ -121,7 +110,7 @@ public class Swing extends javax.swing.JFrame {
 						ProcessBuilder process = new ProcessBuilder("detection_notes",fichier);
 						
 						process.redirectOutput(Redirect.PIPE);
-						process.directory(new File("../Detection/"));
+						process.directory(new File(System.getProperty("user.home")+"/git/Groupe2/Detection/"));
 						Process processstart = process.start();
 						processstart.waitFor();// Wait to finish application execution.
 						System.out.println("fin detection_notes");
@@ -156,7 +145,7 @@ public class Swing extends javax.swing.JFrame {
 						ProcessBuilder process = new ProcessBuilder("java","ParserMidi",fichier);
 						
 						process.redirectOutput(Redirect.PIPE);
-						process.directory(new File("."));
+						process.directory(new File(System.getProperty("user.home")+"/git/Groupe2/ParserMidi/"));
 						Process processstart = process.start();
 						processstart.waitFor();// Wait to finish application execution.
 						System.out.println("fin ParserMidi");
@@ -190,7 +179,7 @@ public class Swing extends javax.swing.JFrame {
 						ProcessBuilder process = new ProcessBuilder("createSheet",fichier);
 						
 						process.redirectOutput(Redirect.PIPE);
-						process.directory(new File("../Lilypond/code/bin/"));
+						process.directory(new File(System.getProperty("user.home")+"/git/Groupe2/Lilypond/code/bin"));
 						Process processstart = process.start();
 						processstart.waitFor();// Wait to finish application execution.
 						System.out.println("fin createSheet");
@@ -224,10 +213,10 @@ public class Swing extends javax.swing.JFrame {
 						ProcessBuilder process = new ProcessBuilder("lilypond",fichier);
 						
 						process.redirectOutput(Redirect.PIPE);
-						process.directory(new File("../Lilypond/code/bin/"));
+						process.directory(new File(System.getProperty("user.home")+"/git/Groupe2/Lilypond/code/bin"));
 						Process processstart = process.start();
 						processstart.waitFor();// Wait to finish application execution.
-						System.out.println("fin lilypond");
+						System.out.println("fin createSheet");
 							
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
@@ -260,163 +249,6 @@ public class Swing extends javax.swing.JFrame {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					} 
-                }
-            }
-        });
-        
-        jButton6.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-            	JFileChooser fileChooser = new JFileChooser();
-                try {
-					fileChooser.setCurrentDirectory(new File(new File(".").getCanonicalPath()));
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-                int result = fileChooser.showDialog(null, "selectionner");
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    File selectedFile = fileChooser.getSelectedFile();
-                    String fichier = selectedFile.getPath();
-                    System.out.println(selectedFile);
-                    try {
-						ProcessBuilder process = new ProcessBuilder("detection_notes",fichier);
-						
-						process.redirectOutput(Redirect.PIPE);
-						process.directory(new File("../Detection/"));
-						Process processstart = process.start();
-						processstart.waitFor();// Wait to finish application execution.
-						System.out.println("fin detection_notes");
-							
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-                    
-                    try {
-						ProcessBuilder process = new ProcessBuilder("createSheet","../../../ParserMidi/notes.txt");
-						
-						process.redirectOutput(Redirect.PIPE);
-						process.directory(new File("../Lilypond/code/bin/"));
-						Process processstart = process.start();
-						processstart.waitFor();// Wait to finish application execution.
-						System.out.println("fin createSheet");
-							
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-                    
-                    try {
-						ProcessBuilder process = new ProcessBuilder("lilypond","partition.ly");
-						
-						process.redirectOutput(Redirect.PIPE);
-						process.directory(new File("../Lilypond/code/bin/"));
-						Process processstart = process.start();
-						processstart.waitFor();// Wait to finish application execution.
-						System.out.println("fin lilypond");
-							
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-                    
-                    try {
-                    	File pdf = new File("../Lilypond/code/bin/partition.pdf");
-                    	Desktop.getDesktop().open(pdf);
-                    	
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} 
-                    
-                }
-            }
-        });
-        
-        
-        jButton7.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-            	JFileChooser fileChooser = new JFileChooser();
-                try {
-					fileChooser.setCurrentDirectory(new File(new File(".").getCanonicalPath()));
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-                int result = fileChooser.showDialog(null, "selectionner");
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    File selectedFile = fileChooser.getSelectedFile();
-                    String fichier = selectedFile.getPath();
-                    System.out.println(selectedFile);
-                    try {
-						ProcessBuilder process = new ProcessBuilder("java","ParserMidi",fichier);
-						
-						process.redirectOutput(Redirect.PIPE);
-						process.directory(new File("."));
-						Process processstart = process.start();
-						processstart.waitFor();// Wait to finish application execution.
-						System.out.println("fin detection_notes");
-							
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-                    
-                    try {
-						ProcessBuilder process = new ProcessBuilder("createSheet","../../../ParserMidi/notes.txt");
-						
-						process.redirectOutput(Redirect.PIPE);
-						process.directory(new File("../Lilypond/code/bin/"));
-						Process processstart = process.start();
-						processstart.waitFor();// Wait to finish application execution.
-						System.out.println("fin createSheet");
-							
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-                    
-                    try {
-						ProcessBuilder process = new ProcessBuilder("lilypond","partition.ly");
-						
-						process.redirectOutput(Redirect.PIPE);
-						process.directory(new File("../Lilypond/code/bin/"));
-						Process processstart = process.start();
-						processstart.waitFor();// Wait to finish application execution.
-						System.out.println("fin lilypond");
-							
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-                    
-                    try {
-                    	File pdf = new File("../Lilypond/code/bin/partition.pdf");
-                    	Desktop.getDesktop().open(pdf);
-                    	
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} 
-                    
                 }
             }
         });
@@ -468,7 +300,5 @@ public class Swing extends javax.swing.JFrame {
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
-    private javax.swing.JButton jButton6;
-    private javax.swing.JButton jButton7;
     // End of variables declaration//GEN-END:variables
 }
