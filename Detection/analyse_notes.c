@@ -1,5 +1,6 @@
 #include "analyse_notes.h"
 #include <string.h>
+
 int inf(elem e1,elem e2){
   return e1<e2;
 }
@@ -173,17 +174,22 @@ signal analyse_notes(short *amp, float *temps, int nb_point,int deb, int fin){
     }
   }
 
-  frequencemax = cleanFrequence(s.tabfreq,s.nfre);
-  //printf("Frequence 1 : %f\n",frequencemax);
-  detectionnotes(frequencemax);
+  /*frequencemax = cleanFrequence(s.tabfreq,s.nfre);
+  printf("Frequence 1 : %f\n",frequencemax);
+  printf("note : %s\n",detectionnotes(frequencemax));
+  
   frequencemax = cleanFrequence2(s.tabfreq,s.nfre);
-  //printf("\nFrequence 2 : %f\n",frequencemax);
-  detectionnotes(frequencemax);
+  printf("\nFrequence 2 : %f\n",frequencemax);
+  printf("note : %s",detectionnotes(frequencemax));*/
+
   frequencemax = cleanFrequence3(s.tabfreq,s.nfre);
   //printf("\nFrequence 3 : %f\n",frequencemax);
-  detectionnotes(frequencemax);
-  //frequencemax = cleanFrequence4(s.tabfreq,s.nfre);
-  //printf("\nFrequence 4 : %f\n",frequencemax);
+  //printf("note : %s",detectionnotes(frequencemax));
+	 
+  /*frequencemax = cleanFrequence4(s.tabfreq,s.nfre);
+  printf("\nFrequence 4 : %f\n",frequencemax);
+  printf("note : %s", detectionnotes(frequencemax));*/
+
   s.note = detectionnotes(frequencemax);
   return s;
   

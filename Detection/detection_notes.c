@@ -6,7 +6,7 @@
 
 #include "analyse_notes.h"
 #include "fft.h" 
-
+#include "f_tmp.h" 
 
 
 void recupere_mot(char mot[5], FILE* fich, int debug);
@@ -46,6 +46,7 @@ int main(int argc, char** argv){
     float note;  // permet de stocker la frequence d'une note
     short amp, defausse_short, nbCanaux, bitsPerSample, bytePerBloc;
     char* nomFich = NULL;
+    char **tabnotes;
     char mot[5];   // permet de recuperer les mot de longueur 4 qui servent a identifier chaque bloc
     mot[4] = '\0';   //rajoute la fin du mot directement
     FILE* fich = NULL;
@@ -208,14 +209,18 @@ int main(int argc, char** argv){
     fprintf(stderr, "Nombre de points analyses lors de la FFT: %d\n\n", (int) pow(2, (int) log2(point_fourier)));
  
     // analyse des notes trouvees par la FFT
+    tabnotes = (char**) malloc(sizeof(char*)*nb_note); //table des notes
+    
     printf("Analyse des notes grace a la FFT:\n");
     for(i = 0; i<nb_note; i++){
-        note = analyse_notes_FFT(amplitudes, notes[i], notes[i+1], point_fourier, freqEch);
-        printf("Note %d: %s (%lf)\n",i+1,detectionnotes(note), note);
+      note = analyse_notes_FFT(amplitudes, notes[i], notes[i+1], point_fourier, freqEch);
+      tabnotes[i] = detectionnotes(note); //insertion de la note dans la table 
+      printf("Note %d: %s (%lf)\n",i+1,tabnotes[i], note);
     }
     
     // generation du fichier intermediaire
-    
+    ecrire_fichier(tabnotes,nb_note);
+      
     exit(0);
 }
 
