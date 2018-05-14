@@ -847,7 +847,7 @@ void modification_tableau_note_diese(int** tableau_notes,int indice_gamme,int no
 				case 'd':
 					if(notes_tonalites[indice_gamme][4]==1 && indice_gamme==13){
 						tableau_notes[i][0]='c';
-						tableau_notes[i][2]=2;fprintf(stderr,"ici cahnge diese\n");
+						tableau_notes[i][2]=2;
 					}
 				break;
 				case 'a':
@@ -903,7 +903,7 @@ int ecrire_accord (int ligne, FILE* output, int** tableau_notes, int nb_notes_to
 
 void trie_note(int* tab_chercher_gamme ,int* minima_gamme){
 	int tab_chercher_gamme_trier[7]={-1,-1,-1,-1,-1,-1,-1};
-	int i=0,j=0,trouver = 0;
+	int i=2,j=0,trouver = 0;
 	int nombre_notes_presente;
 	int nombre_notes_precedente;
 	int m;
@@ -913,7 +913,7 @@ void trie_note(int* tab_chercher_gamme ,int* minima_gamme){
 		j=0;trouver=0;
 		nombre_notes_presente = tab_chercher_gamme[i];
 		while(j<7 && trouver == 0){
-			if(tab_chercher_gamme_trier[j] == -1){
+			if(tab_chercher_gamme_trier[j] == -1 && nombre_notes_presente != 0){
 				tab_chercher_gamme_trier[j]=i;
 				trouver = 1;
 			}
