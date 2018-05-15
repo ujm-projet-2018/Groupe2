@@ -36,7 +36,7 @@ void ecrire(int** tableau_notes, FILE* output){
         if (temps_restant < 0) {
              if (fabs(temps_restant) == (double)chiffrage/(double)(duree*2)) {
                  if (tableau_notes[i][4] == 0) { 
-                     fprintf(output, "%s%d( \\bar \"|\" %s%d)\n", ecriture, duree*2, ecriture, duree*2);
+                     fprintf(output, "%s%d( %s%d)\n", ecriture, duree*2, ecriture, duree*2);
 
                      if (tableau_notes[i][5] != 0) {
                          fprintf(output, "r%d ", tableau_notes[i][5]);
@@ -86,6 +86,7 @@ void ecrire(int** tableau_notes, FILE* output){
 
                 if (tableau_notes[i][5] != 0) {
                     fprintf(output, "r%d ", tableau_notes[i][5]);
+                    temps_restant -= (double)chiffrage/temps_silence;
                 }
             }
             else {
@@ -101,6 +102,7 @@ void ecrire(int** tableau_notes, FILE* output){
 
                 if (tableau_notes[i][5] != 0) {
                     fprintf(output, "r%d ", tableau_notes[i][5]);
+                    temps_restant -= (double)chiffrage/temps_silence;
                 }
             }
             else {
@@ -692,17 +694,20 @@ void reconnaissance_gamme(int** tableau_notes,FILE* output){
 
 	initialisation_tableau_gamme(noms_tonalites,notes_tonalites);//Creation des differentes gammes	
 
-	afficher_gamme_et_noms(noms_tonalites,notes_tonalites);
+	//afficher_gamme_et_noms(noms_tonalites,notes_tonalites);
 	/*Affiche le tableau de la partition pour verification : */
-	int i;
+	//int i;
+        /*
 	for(i=0;i<14;i++){ 
 		fprintf(stderr,"%d ",tab_chercher_gamme[i]);}
 	fprintf(stderr,"\n");
-
+        */
 	trie_note(tab_chercher_gamme ,tab_minima);
+        /*
 	for(i=0;i<14;i++){ 
 		fprintf(stderr,"%d ",tab_minima[i]);}
 	fprintf(stderr,"\n");
+        */
         /*On cherche la gamme*/
 	indice_gamme = chercher_gamme(notes_tonalites,tab_minima);
 	type_gamme ='s';//Variable globale servant pour plus tard pour ecrire les notes dans le fichier
@@ -906,7 +911,7 @@ void trie_note(int* tab_chercher_gamme ,int* minima_gamme){
 	int i=2,j=0,trouver = 0;
 	int nombre_notes_presente;
 	int nombre_notes_precedente;
-	int m;
+	//int m;
 	
 	/*On regarde les notes les plus presente suceptible de composer la gamme*/
 	while(i<14){
@@ -929,18 +934,19 @@ void trie_note(int* tab_chercher_gamme ,int* minima_gamme){
 			j++;
 			
 		}
+                /*
 	for(m=0;m<7;m++){
 		fprintf(stderr,"tab_cher_cher %d %d \n",m,tab_chercher_gamme_trier[m]);
 	
-	}
+                }*/
 		minima_gamme[i]=0;
 		i++;	
 	}
 	/*On rempli minima_gamme qui sera la nouvelle gamme traité*/
-	for(i=0;i<7;i++){
+	/*for(i=0;i<7;i++){
 		fprintf(stderr,"tab_cher_cher %d \n",tab_chercher_gamme_trier[i]);
 		minima_gamme[tab_chercher_gamme_trier[i]] = 1;
-	}
+                }*/
 }
 
 void trie(int indice_note_new,int indice_insertion,int tab_chercher_gamme_trier[7]){
