@@ -28,7 +28,6 @@ char* detectionnotes(double ff){
       if(i == 11){
 	if(ff < (notes[i][j]+(notes[0][j+1] - notes[i][j])/2) && ff > (notes[i][j]-(notes[i][j]-notes[i-1][j])/2) ) {
 	  sprintf(note,"%s %d",notesS[i],j);
-	  //printf("note : %s %d\n",notesS[i],j);
 	    fin = 1;
 	    break;
 	}
@@ -37,7 +36,6 @@ char* detectionnotes(double ff){
 	if(ff < (notes[i][j]+(notes[i+1][j] - notes[i][j])/2) && ff > (notes[i][j]-(notes[i][j]-notes[11][j-1])/2) ) {
 	  if(i == 0){
 	    sprintf(note,"%s %d",notesS[0],j);
-	    //printf("note : %s %d\n",notesS[0],j);
 	    fin = 1;
 	    break;
 	  }
@@ -45,7 +43,6 @@ char* detectionnotes(double ff){
       }
       else if(ff < (notes[i][j]+(notes[i+1][j] - notes[i][j])/2) && ff > (notes[i][j]-(notes[i][j]-notes[i-1][j])/2) ) {
 	sprintf(note,"%s %d",notesS[i],j);
-	//printf("note : %s %d\n",notesS[i],j);
 	fin = 1;
 	break;
       }
@@ -66,7 +63,6 @@ double cleanFrequence2(double *tabfreq,int nfre){
 
 double cleanFrequence3(double *tabfreq,int nfre){
   int del = nfre*0.01,i;
-  //printf("del %d\n",del);
   double frequencemax = 0;
   double *tab = tri_fusion(tabfreq,nfre,inf);
   tab = &tab[del];
@@ -81,7 +77,7 @@ double cleanFrequence3(double *tabfreq,int nfre){
 
 double cleanFrequence4(double *tabfreq,int nfre){
   int maxcompt = 0,max,i;
-  double /*frequencemax = 0,*/vmax = 0,v=0;
+  double vmax = 0,v=0;
   double *tab = tri_fusion(tabfreq,nfre,inf);
 
   v = tab[0];
@@ -136,8 +132,8 @@ signal analyse_notes(short *amp, float *temps, int nb_point,int deb, int fin){
   s.ntfre = 0;
   s.nfre = 0;
   
-  int ampmax = 0, /**tfre, ntfre = 0,nfre=0,*/ ampmaxold = 0;
-  double frequence = 0, frequencemax = -1000000, t1 = 0/*,*tabfreq*/;
+  int ampmax = 0;
+  double frequence = 0, frequencemax = -1000000, t1 = 0;
   float t2 = 0.0;
   s.tfre = (int*) malloc(sizeof(int)*1);
   s.tabfreq = (double*) malloc(sizeof(double)*1);
@@ -165,7 +161,7 @@ signal analyse_notes(short *amp, float *temps, int nb_point,int deb, int fin){
       s.tabfreq = realloc(s.tabfreq,sizeof(double)*s.nfre);
       s.tabfreq[s.nfre-1] = frequence;
       s.tfre[s.ntfre-1] = nb_point;
-      ampmaxold = ampmax;
+
       ampmax = am;
       t1 = t2;
       
