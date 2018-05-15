@@ -2,7 +2,6 @@
 \language "english"
 {
 \key c  \major
-b''4 r4 b''4 r8 a''8 r16 g''16 r2 g''4 a''16( \bar "|" a''16)
-
+c4 cs4 d4 ds4 e4 f4 fs4 g4 gs4 a4 as4 b4 c'4 
 \bar "|."
 }

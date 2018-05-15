@@ -118,7 +118,7 @@ public class Swing extends javax.swing.JFrame {
                     String fichier = selectedFile.getPath();
                     System.out.println(selectedFile);
                     try {
-						ProcessBuilder process = new ProcessBuilder("detection_notes",fichier);
+						ProcessBuilder process = new ProcessBuilder("./detection_notes","-f",fichier);
 						
 						process.redirectOutput(Redirect.PIPE);
 						process.directory(new File("../Detection/"));
@@ -187,7 +187,7 @@ public class Swing extends javax.swing.JFrame {
                     String fichier = selectedFile.getPath();
                     System.out.println(selectedFile);
                     try {
-						ProcessBuilder process = new ProcessBuilder("createSheet",fichier);
+						ProcessBuilder process = new ProcessBuilder("./createSheet",fichier);
 						
 						process.redirectOutput(Redirect.PIPE);
 						process.directory(new File("../Lilypond/code/bin/"));
@@ -279,7 +279,7 @@ public class Swing extends javax.swing.JFrame {
                     String fichier = selectedFile.getPath();
                     System.out.println(selectedFile);
                     try {
-						ProcessBuilder process = new ProcessBuilder("detection_notes",fichier);
+			ProcessBuilder process = new ProcessBuilder("./detection_notes","-f",fichier);
 						
 						process.redirectOutput(Redirect.PIPE);
 						process.directory(new File("../Detection/"));
@@ -296,7 +296,7 @@ public class Swing extends javax.swing.JFrame {
 					}
                     
                     try {
-						ProcessBuilder process = new ProcessBuilder("createSheet","../../../ParserMidi/notes.txt");
+						ProcessBuilder process = new ProcessBuilder("./createSheet","../../../Detection/notes.txt");
 						
 						process.redirectOutput(Redirect.PIPE);
 						process.directory(new File("../Lilypond/code/bin/"));
@@ -375,7 +375,7 @@ public class Swing extends javax.swing.JFrame {
 					}
                     
                     try {
-						ProcessBuilder process = new ProcessBuilder("createSheet","../../../ParserMidi/notes.txt");
+						ProcessBuilder process = new ProcessBuilder("./createSheet","../../../ParserMidi/notes.txt");
 						
 						process.redirectOutput(Redirect.PIPE);
 						process.directory(new File("../Lilypond/code/bin/"));
