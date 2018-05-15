@@ -86,6 +86,7 @@ void ecrire(int** tableau_notes, FILE* output){
 
                 if (tableau_notes[i][5] != 0) {
                     fprintf(output, "r%d ", tableau_notes[i][5]);
+                    temps_restant -= (double)chiffrage/temps_silence;
                 }
             }
             else {
@@ -101,6 +102,7 @@ void ecrire(int** tableau_notes, FILE* output){
 
                 if (tableau_notes[i][5] != 0) {
                     fprintf(output, "r%d ", tableau_notes[i][5]);
+                    temps_restant -= (double)chiffrage/temps_silence;
                 }
             }
             else {
